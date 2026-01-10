@@ -46,7 +46,9 @@ export const metadata = {
   title: "صفوة عنان | للتسويق والتطوير العقاري",
   description: "شركة صفوة عنان للتسويق والتطوير العقاري، نقدم حلولاً عقارية متكاملة تشمل إدارة الأملاك، التسويق، التشغيل، والصيانة.",
   icons: {
-    icon: '/icon.png',
+    icon: '/images/logo.png',
+    shortcut: '/images/logo.png',
+    apple: '/images/logo.png',
   },
 };
 
