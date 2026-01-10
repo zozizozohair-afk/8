@@ -45,11 +45,6 @@ const ibmPlexSansArabic = localFont({
 export const metadata = {
   title: "صفوة عنان | للتسويق والتطوير العقاري",
   description: "شركة صفوة عنان للتسويق والتطوير العقاري، نقدم حلولاً عقارية متكاملة تشمل إدارة الأملاك، التسويق، التشغيل، والصيانة.",
-  icons: {
-    icon: '/images/logo.png',
-    shortcut: '/images/logo.png',
-    apple: '/images/logo.png',
-  },
 };
 
 export default function RootLayout({ children }) {
