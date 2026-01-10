@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1b1b1b;
+  --color-background: #f9f9f9;
+  --color-secondary-text: #555555;
+  --color-border-light: rgba(0,0,0,0.08);
+  --color-accent: #D4AF37;
+}
+
+@layer utilities {
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #F3C960 0%, #D4AF37 45%, #B8860B 100%);
+  }
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #F3C960 0%, #D4AF37 45%, #B8860B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-primary);
+    font-family: var(--font-ibm-plex), sans-serif;
+  }
+}
+
+@layer utilities {
+  .container-custom {
+    margin-inline: auto;
+    padding-inline: 24px;
+    max-width: 1320px;
+  }
+  
+  @media (min-width: 640px) {
+    .container-custom {
+      padding-inline: 64px;
+    }
+  }
+}
