@@ -137,24 +137,57 @@ import {
 
   // Helper function to generate Google Maps Embed URL
   const getMapEmbedUrl = (link, location) => {
-    // If there is a link
+    // If there is a link, prioritize it
     if (link) {
-      // Ensure it starts with http
       const safeLink = link.startsWith('http') ? link : `https://${link}`;
 
-      // If it's already an embed link
+      // 1. If it's already an embed link, return it as is
       if (safeLink.includes('/maps/embed')) {
         return safeLink;
       }
 
-      // If it's a regular Google Maps link
-      if (safeLink.includes('google.com/maps') || safeLink.includes('maps.app.goo.gl')) {
-        return `https://www.google.com/maps?q=${encodeURIComponent(safeLink)}&output=embed`;
+      // 2. Try to extract coordinates (@lat,lng)
+      const coordsMatch = safeLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (coordsMatch) {
+        const [_, lat, lng] = coordsMatch;
+        return `https://maps.google.com/maps?q=${lat},${lng}&hl=ar&z=15&output=embed`;
       }
+
+      // 3. Try to extract place name from /place/Name
+      const placeMatch = safeLink.match(/\/maps\/place\/([^/]+)/);
+      if (placeMatch) {
+         // Decode the place name (e.g. Al+Riyadh -> Al Riyadh)
+         const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+         return `https://maps.google.com/maps?q=${encodeURIComponent(placeName)}&hl=ar&z=15&output=embed`;
+      }
+
+      // 4. Try to extract coordinates from 'q=' parameter if present
+      const qMatch = safeLink.match(/[?&]q=([^&]+)/);
+      if (qMatch) {
+        return `https://maps.google.com/maps?q=${qMatch[1]}&hl=ar&z=15&output=embed`;
+      }
+      
+      // 5. Try to extract query from 'll=' parameter (lat,long)
+      const llMatch = safeLink.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (llMatch) {
+        return `https://maps.google.com/maps?q=${llMatch[1]},${llMatch[2]}&hl=ar&z=15&output=embed`;
+      }
+      
+      // 6. Check if the link itself is just coordinates (e.g. "24.7136,46.6753")
+      // Sometimes users might paste just coordinates into the link field
+      const rawCoordsMatch = safeLink.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+      if (rawCoordsMatch) {
+          return `https://maps.google.com/maps?q=${rawCoordsMatch[1]},${rawCoordsMatch[2]}&hl=ar&z=15&output=embed`;
+      }
+
+      // 7. If we can't parse it, DO NOT use the full link as 'q' because it breaks the embed if it's a URL.
+      // Instead, fall back to the location name, which is safer.
     }
 
     // Fallback -> search by location name
-    return `https://www.google.com/maps?q=${encodeURIComponent(location || 'الرياض')}&output=embed`;
+    // This handles cases where the link is a shortened URL (maps.app.goo.gl) that we can't resolve,
+    // or if the link is missing/invalid. Searching by name is better than a broken map.
+    return `https://maps.google.com/maps?q=${encodeURIComponent(location || 'الرياض')}&hl=ar&z=15&output=embed`;
   };
 
   if (loading) {
