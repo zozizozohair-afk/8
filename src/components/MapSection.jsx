@@ -9,7 +9,7 @@ export default function MapSection() {
       {/* Full Background Map */}
       <div className="absolute inset-0 w-full h-full">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3624.847316623083!2d46.736397!3d24.774322!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e2f01a4a3b6f9c7%3A0x8a5b6c4d0c9f3c1!2sSafwat%20Anan!5e0!3m2!1sar!2ssa!4v1700000000000"
+          src="https://maps.google.com/maps?q=24.6407164,46.8435758&hl=ar&z=17&output=embed"
           width="100%"
           height="100%"
           style={{ border: 0 }}
@@ -74,7 +74,7 @@ export default function MapSection() {
 
               {/* CTA Button */}
               <a 
-                href="https://maps.app.goo.gl/ditz9KsxSeQ4L2bj8" 
+                href="https://maps.app.goo.gl/3KkLHsdk6EKhaMVi8" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-full group flex items-center justify-center gap-3 bg-white text-black py-4 rounded-xl font-bold hover:bg-[#D4AF37] transition-all duration-300 shadow-lg"
