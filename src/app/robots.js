@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 
 const baseUrl = "https://safwat-anan.sa";
 
-export default function robots(): MetadataRoute.Robots {
+export default function robots() {
   return {
     rules: {
       userAgent: "*",
