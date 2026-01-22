@@ -141,9 +141,15 @@ import {
     if (link) {
       const safeLink = link.startsWith('http') ? link : `https://${link}`;
 
-      // 1. If it's already an embed link, return it as is
+      // 1. If it's already an embed link, ensure it's from Google Maps strictly
       if (safeLink.includes('/maps/embed')) {
-        return safeLink;
+        // Security Check: Only allow Google Maps domains to prevent phishing/malicious iframes
+        if (safeLink.startsWith('https://www.google.com/maps') || 
+            safeLink.startsWith('https://maps.google.com') ||
+            safeLink.startsWith('https://google.com/maps')) {
+          return safeLink;
+        }
+        // If it looks like an embed link but not from Google, we ignore it and fall back to search
       }
 
       // 2. Try to extract coordinates (@lat,lng)
