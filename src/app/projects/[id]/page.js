@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import ProjectClient from './ProjectClient';
 
 // When using output: 'export', dynamicParams must be false.
-export const dynamicParams = false;
+// But for dev mode, we want to allow dynamic params to avoid 404s on new content.
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

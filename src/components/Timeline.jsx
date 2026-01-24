@@ -44,7 +44,7 @@ export default function Timeline() {
   });
 
   return (
-    <section ref={containerRef} className="py-32 relative overflow-hidden bg-[#0f0f0f]">
+    <section id="timeline" data-theme="gradual-dark" ref={containerRef} className="py-32 relative overflow-hidden bg-[#0f0f0f]">
       {/* Cinematic Background */}
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-[0.03] fixed-bg" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f] via-[#0f0f0f]/95 to-[#0f0f0f]" />

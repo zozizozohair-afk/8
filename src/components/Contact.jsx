@@ -13,8 +13,30 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic here
-    console.log('Form submitted:', formState);
+    
+    const { name, email, message } = formState;
+    
+    // Construct the WhatsApp message
+    const whatsappMessage = `*استفسار جديد من الموقع الإلكتروني*
+------------------------
+*الاسم:* ${name}
+*البريد الإلكتروني:* ${email}
+------------------------
+*الرسالة:*
+${message}`.trim();
+
+    // WhatsApp API URL
+    const whatsappUrl = `https://wa.me/966570109444?text=${encodeURIComponent(whatsappMessage)}`;
+    
+    // Open in new tab
+    window.open(whatsappUrl, '_blank');
+    
+    // Reset form
+    setFormState({
+      name: '',
+      email: '',
+      message: ''
+    });
   };
 
   const handleCardClick = (item) => {

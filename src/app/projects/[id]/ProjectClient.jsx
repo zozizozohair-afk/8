@@ -35,10 +35,11 @@ import {
    const [activeTab, setActiveTab] = useState('overview');
    const [activeSection, setActiveSection] = useState(null);
    const [selectedUnit, setSelectedUnit] = useState(null);
-   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [lightboxImages, setLightboxImages] = useState([]);
   const [mapError, setMapError] = useState(false);
- 
-   useEffect(() => {
+
+  useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
 
@@ -127,13 +128,13 @@ import {
       if (lightboxIndex === null) return;
       
       if (e.key === 'Escape') setLightboxIndex(null);
-      if (e.key === 'ArrowRight') setLightboxIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1)); // RTL logic: Right arrow goes to "previous" (visually right)
-      if (e.key === 'ArrowLeft') setLightboxIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));  // RTL logic: Left arrow goes to "next" (visually left)
+      if (e.key === 'ArrowRight') setLightboxIndex((prev) => (prev > 0 ? prev - 1 : lightboxImages.length - 1)); // RTL logic
+      if (e.key === 'ArrowLeft') setLightboxIndex((prev) => (prev < lightboxImages.length - 1 ? prev + 1 : 0));  // RTL logic
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex, allImages.length]);
+  }, [lightboxIndex, lightboxImages]);
 
   // Helper function to generate Google Maps Embed URL
   const getMapEmbedUrl = (link, location) => {
@@ -382,7 +383,14 @@ import {
                     {sections.length > 0 ? (
                       sections.map((section) => (
                         <div key={section.id} className="bg-white p-6 rounded-3xl shadow-sm border border-border-light flex flex-col md:flex-row gap-8">
-                          <div className="w-full md:w-2/5 h-64 bg-gray-100 rounded-2xl overflow-hidden relative group">
+                          <div className="w-full md:w-2/5 h-64 bg-gray-100 rounded-2xl overflow-hidden relative group cursor-pointer"
+                               onClick={() => {
+                                 if (section.plan_image) {
+                                   setLightboxImages([{ file_url: section.plan_image, name: section.name }]);
+                                   setLightboxIndex(0);
+                                 }
+                               }}
+                          >
                             {section.plan_image ? (
                                 <img 
                                 src={section.plan_image} 
@@ -474,8 +482,15 @@ import {
 
                     {filteredUnits.length > 0 ? (
                       filteredUnits.map((unit) => (
-                        <div key={unit.id} className="bg-white p-6 rounded-3xl shadow-sm border border-border-light flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">
-                          <div className="w-full md:w-1/3 h-48 md:h-auto bg-gray-100 rounded-2xl overflow-hidden relative group">
+                        <div key={unit.id} className="bg-white p-6 rounded-3xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] border border-gray-100 flex flex-col md:flex-row gap-6 hover:shadow-[0_30px_60px_-15px_rgba(212,175,55,0.3)] transition-all duration-300 hover:scale-[1.02] hover:border-accent/50 relative overflow-hidden group/card">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -mr-16 -mt-16 transition-transform duration-500 group-hover/card:scale-110" />
+                          
+                          <div className="w-full md:w-1/3 h-64 md:h-auto bg-gray-100 rounded-2xl overflow-hidden relative group cursor-pointer shadow-md group-hover/card:shadow-lg transition-shadow duration-300"
+                               onClick={() => {
+                                 setLightboxImages([{ file_url: unit.main_image || '/images/4.jpg', name: unit.type }]);
+                                 setLightboxIndex(0);
+                               }}
+                          >
                             <img 
                               src={unit.main_image || '/images/4.jpg'} 
                               alt={unit.type} 
@@ -519,18 +534,18 @@ import {
                               </div>
                             </div>
                             
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 mt-4">
                               <a 
                         href={`https://wa.me/966570109444?text=${encodeURIComponent(`أرغب في حجز معاينة للوحدة: ${unit.type} ${unit.unit_number ? `- ${unit.unit_number}` : ''} في مشروع ${project.name}${unit.section_id ? ` - قسم ${sections.find(s => s.id === unit.section_id)?.name || ''}` : ''}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                                className="flex-1 bg-primary text-white py-2.5 rounded-xl font-medium hover:bg-primary/90 transition-colors flex items-center justify-center text-center"
+                                className="flex-1 bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center text-center group-hover/card:bg-accent group-hover/card:shadow-accent/30"
                               >
                                 حجز معاينة
                               </a>
                               <button 
                                 onClick={() => setSelectedUnit(unit)}
-                                className="px-4 py-2.5 border border-border-light rounded-xl hover:bg-gray-50 transition-colors text-primary"
+                                className="px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-primary/30 transition-all text-primary font-medium"
                               >
                                 تفاصيل أكثر
                               </button>
@@ -564,7 +579,10 @@ import {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 }}
                           key={index}
-                          onClick={() => setLightboxIndex(index)}
+                          onClick={() => {
+                            setLightboxImages(allImages);
+                            setLightboxIndex(index);
+                          }}
                           className="aspect-[4/3] rounded-3xl overflow-hidden relative group cursor-zoom-in shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 bg-gray-100"
                         >
                           <img 
@@ -656,13 +674,13 @@ import {
                   </div>
                 </a>
                 
-                <a href="mailto:MSC22@OUTLOOK.SA" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                <a href="mailto:marketing@safwat-anan.sa" className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-accent">
                     <Mail size={18} />
                   </div>
                   <div>
                     <span className="block text-xs text-secondary-text">راسلنا</span>
-                    <span className="font-bold text-primary">MSC22@OUTLOOK.SA</span>
+                    <span className="font-bold text-primary">marketing@safwat-anan.sa</span>
                   </div>
                 </a>
               </div>
@@ -851,7 +869,7 @@ import {
               className="absolute left-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all z-[160] hidden md:block hover:scale-110"
               onClick={(e) => {
                 e.stopPropagation();
-                setLightboxIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+                setLightboxIndex((prev) => (prev > 0 ? prev - 1 : lightboxImages.length - 1));
               }}
             >
               <ChevronRight size={32} />
@@ -860,7 +878,7 @@ import {
               className="absolute right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all z-[160] hidden md:block hover:scale-110"
               onClick={(e) => {
                 e.stopPropagation();
-                setLightboxIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+                setLightboxIndex((prev) => (prev < lightboxImages.length - 1 ? prev + 1 : 0));
               }}
             >
               <ChevronLeft size={32} />
@@ -877,8 +895,8 @@ import {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                src={allImages[lightboxIndex].file_url}
-                alt={allImages[lightboxIndex].name}
+                src={lightboxImages[lightboxIndex]?.file_url}
+                alt={lightboxImages[lightboxIndex]?.name}
                 className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-lg"
               />
               
@@ -889,8 +907,8 @@ import {
                   animate={{ opacity: 1, y: 0 }}
                   className="inline-block bg-black/50 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/10"
                 >
-                  <p className="text-lg font-medium mb-1">{allImages[lightboxIndex].name || `صورة ${lightboxIndex + 1}`}</p>
-                  <p className="text-sm text-white/60 dir-ltr">{lightboxIndex + 1} / {allImages.length}</p>
+                  <p className="text-lg font-medium mb-1">{lightboxImages[lightboxIndex]?.name || `صورة ${lightboxIndex + 1}`}</p>
+                  <p className="text-sm text-white/60 dir-ltr">{lightboxIndex + 1} / {lightboxImages.length}</p>
                 </motion.div>
               </div>
             </div>
