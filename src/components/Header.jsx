@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Search, Home, Info, Briefcase, Building2, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,11 +10,28 @@ export default function Header({ breadcrumb, variant = 'default' }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [darkness, setDarkness] = useState(0);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 50);
+      const isLocked = isMenuOpen || isSearchOpen;
+      const lastScrollY = lastScrollYRef.current;
+      const delta = scrollY - lastScrollY;
+      const shouldHide = scrollY > 120 && delta > 10;
+      const shouldShow = delta < -10;
+
+      if (isLocked) {
+        setIsHeaderVisible(true);
+      } else if (shouldHide) {
+        setIsHeaderVisible(false);
+      } else if (shouldShow) {
+        setIsHeaderVisible(true);
+      }
+
+      lastScrollYRef.current = scrollY;
 
       // Check sections
       const darkSections = document.querySelectorAll('[data-theme="dark"], #contact, footer');
@@ -47,8 +64,9 @@ export default function Header({ breadcrumb, variant = 'default' }) {
     };
     
     window.addEventListener('scroll', handleScroll);
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMenuOpen, isSearchOpen]);
 
   const navLinks = [
     { name: 'الرئيسية', href: '#', icon: Home },
@@ -77,6 +95,7 @@ export default function Header({ breadcrumb, variant = 'default' }) {
 
   const headerClassName = [
     'fixed top-0 w-full z-50 transition-all duration-300 h-[80px] flex items-center',
+    isHeaderVisible ? 'translate-y-0' : '-translate-y-full',
     isHome
       ? (isScrolled
           ? 'backdrop-blur-md shadow-sm'

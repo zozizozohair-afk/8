@@ -16,7 +16,7 @@ export default function MapSection() {
           allowFullScreen
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          className="w-full h-full grayscale-[100%] contrast-[1.1] opacity-70"
+          className="w-full h-full [filter:grayscale(1)_invert(0.92)_contrast(1.15)_brightness(0.9)_saturate(0.9)]"
           title="موقع شركة صفوة عنان"
         ></iframe>
         
@@ -43,25 +43,25 @@ export default function MapSection() {
                 <span>المقر الرئيسي</span>
               </div>
 
-              <h2 className="text-2xl md:text-4xl font-bold text-black mb-3 md:mb-4 leading-tight">
+              <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 md:mb-4 leading-tight drop-shadow-[0_8px_25px_rgba(0,0,0,0.5)]">
                 تفضل بزيارتنا <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#D4AF37] to-[#B8860B]">نصنع المستقبل معاً</span>
               </h2>
               
-              <p className="hidden md:block text-gray-800 text-sm md:text-base leading-relaxed mb-6 md:mb-8 font-light">
+              <p className="hidden md:block text-white/80 text-sm md:text-base leading-relaxed mb-6 md:mb-8 font-light">
                 يسعدنا استقبالكم في مقرنا بالرياض لمناقشة طموحاتكم الاستثمارية والسكنية، وتقديم أفضل الحلول العقارية المبتكرة.
               </p>
 
               {/* Info Items */}
               <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
-                <div className="flex items-center gap-3 md:gap-4 text-black/90 group/item">
+                <div className="flex items-center gap-3 md:gap-4 text-white/90 group/item">
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black flex items-center justify-center shadow-lg group-hover/item:scale-110 transition-transform duration-300">
                     <Navigation size={14} className="text-[#D4AF37] md:w-[18px] md:h-[18px]" />
                   </div>
                   <span className="text-xs md:text-sm font-medium">الرياض، المملكة العربية السعودية</span>
                 </div>
                 
-                <div className="flex items-center gap-3 md:gap-4 text-black/90 group/item">
+                <div className="flex items-center gap-3 md:gap-4 text-white/90 group/item">
                   <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black flex items-center justify-center shadow-lg group-hover/item:scale-110 transition-transform duration-300">
                     <Clock size={14} className="text-[#D4AF37] md:w-[18px] md:h-[18px]" />
                   </div>
@@ -74,7 +74,7 @@ export default function MapSection() {
                 href="https://maps.app.goo.gl/3KkLHsdk6EKhaMVi8" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-full group flex items-center justify-center gap-2 md:gap-3 bg-white text-black py-3 md:py-4 rounded-xl font-bold hover:bg-[#D4AF37] transition-all duration-300 shadow-lg text-sm md:text-base"
+                className="w-full group flex items-center justify-center gap-2 md:gap-3 bg-white/10 text-white border border-white/20 backdrop-blur-md py-3 md:py-4 rounded-xl font-bold hover:bg-[#D4AF37] hover:text-black transition-all duration-300 shadow-lg text-sm md:text-base"
               >
                 <span>احصل على الاتجاهات</span>
                 <ArrowRight size={16} className="rtl:rotate-180 group-hover:-translate-x-1 transition-transform md:w-[18px] md:h-[18px]" />

@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Megaphone, Hotel, Home, CheckCircle2, Award, AwardIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 const services = [
   {
@@ -41,6 +42,63 @@ const services = [
 ];
 
 export default function Services() {
+  const scrollerRef = useRef(null);
+  const pausedRef = useRef(false);
+  const resumeTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (reduceMotion) return;
+
+    let rafId = 0;
+    let lastTs;
+    const speedPxPerMs = 0.04;
+
+    const tick = (ts) => {
+      if (lastTs === undefined) lastTs = ts;
+      const dt = ts - lastTs;
+      lastTs = ts;
+
+      if (!pausedRef.current) {
+        el.scrollLeft += dt * speedPxPerMs;
+        const half = el.scrollWidth / 2;
+        if (half > 0 && el.scrollLeft >= half) {
+          el.scrollLeft -= half;
+        }
+      }
+
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+
+    return () => {
+      if (resumeTimeoutRef.current) {
+        window.clearTimeout(resumeTimeoutRef.current);
+      }
+      window.cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  const pauseAutoScroll = () => {
+    pausedRef.current = true;
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+    }
+  };
+
+  const scheduleResumeAutoScroll = () => {
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = window.setTimeout(() => {
+      pausedRef.current = false;
+    }, 1400);
+  };
+
   return (
     <section id="services" className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
       {/* Decorative Elements */}
@@ -68,8 +126,68 @@ export default function Services() {
             نقدم مجموعة شاملة من الخدمات العقارية والفندقية المصممة لتلبية احتياجاتك بأعلى معايير الجودة والاحترافية.
           </motion.p>
         </div>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <div className="md:hidden -mx-6 sm:-mx-16">
+          <div
+            ref={scrollerRef}
+            dir="ltr"
+            onPointerDown={pauseAutoScroll}
+            onPointerUp={scheduleResumeAutoScroll}
+            onPointerCancel={scheduleResumeAutoScroll}
+            onMouseEnter={pauseAutoScroll}
+            onMouseLeave={scheduleResumeAutoScroll}
+            onTouchStart={pauseAutoScroll}
+            onTouchEnd={scheduleResumeAutoScroll}
+            className="overflow-x-auto scrollbar-hide px-6 sm:px-16"
+          >
+            <div className="flex w-max gap-4 pb-2">
+              {services.concat(services).map((service, index) => (
+                <div
+                  key={`${service.title}-${index}`}
+                  dir="rtl"
+                  className="w-[88vw] max-w-sm flex-shrink-0 group bg-white rounded-2xl p-7 border border-gray-200 shadow-md hover:shadow-xl hover:border-[#B8860B]/35 transition-all duration-500 relative flex flex-col h-full overflow-hidden ring-1 ring-black/5"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent group-hover:via-[#B8860B] transition-all duration-700" />
+
+                  <div className="mb-5 relative">
+                    <div className="w-14 h-14 bg-gold-gradient rounded-2xl flex items-center justify-center group-hover:bg-[#B8860B] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#D4AF37]/25">
+                      <service.icon className="w-7 h-7 text-white transition-colors duration-500" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-[#D4AF37] mb-3 group-hover:text-[#B8860B] transition-colors duration-300">
+                    {service.title}
+                  </h3>
+
+                  <p className="text-gray-700 leading-relaxed mb-6 flex-grow text-[15px]">
+                    {service.description}
+                  </p>
+
+                  <div className="space-y-3 mb-6">
+                    {service.features.map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
+                        <CheckCircle2 className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+
+                  <a
+                    href={`https://wa.me/966570109444?text=أهلاً، أرغب في الاستفسار عن ${service.title}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-between w-full px-6 py-3.5 rounded-xl bg-[#D4AF37] text-white font-bold group-hover:bg-[#B8860B] transition-all duration-300 mt-auto shadow-md shadow-[#D4AF37]/25 text-base"
+                  >
+                    <span>{service.action}</span>
+                    <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map((service, index) => (
             <motion.div
               key={index}

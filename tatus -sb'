@@ -1,0 +1,23 @@
+warning: in the working copy of 'next.config.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/globals.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/About.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Footer.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Header.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Hero.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/MapSection.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Projects.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Services.jsx', LF will be replaced by CRLF the next time Git touches it
+ next.config.js                |  24 [32m++[m
+ package-lock.json             | 814 [32m++++++++++++++++++++++++++++++++++++++++++[m
+ package.json                  |   1 [32m+[m
+ public/images/4.jpg           | Bin [31m760386[m -> [32m0[m bytes
+ src/app/globals.css           |   7 [32m+[m
+ src/app/page.js               |  20 [32m++[m
+ src/components/Footer.jsx     |   9 [32m+[m[31m-[m
+ src/components/Header.jsx     |  23 [32m+[m[31m-[m
+ src/components/Hero.jsx       |  22 [32m+[m[31m-[m
+ src/components/MapSection.jsx |  12 [32m+[m[31m-[m
+ src/components/Projects.jsx   | 266 [32m+++++++++++[m[31m---[m
+ src/components/Services.jsx   | 122 [32m++++++[m[31m-[m
+ src/components/UnitModels.jsx | 399 [32m++++++++++++++++[m[31m-----[m
+ 13 files changed, 1555 insertions(+), 164 deletions(-)

@@ -24,7 +24,7 @@ export default function Hero() {
           initial={{ scale: 1.2 }}
           animate={{ scale: 1 }}
           transition={{ duration: 15, ease: "easeOut" }} // Slower zoom for more cinematic feel
-          className="w-full h-full bg-[url('/images/3.jpg')] bg-cover bg-center bg-no-repeat"
+          className="w-full h-full bg-[url('/images/4.png')] bg-cover bg-center bg-no-repeat"
         />
       </motion.div>
 
@@ -49,15 +49,16 @@ export default function Hero() {
       {/* Main Content */}
       <motion.div 
         style={{ opacity }}
-        className="relative z-20 container-custom h-full flex flex-col items-center justify-center text-center px-4 pt-10 md:pt-0"
+        className="relative z-20 container-custom h-full flex flex-col items-center justify-center px-4 pt-10 md:pt-0 md:px-10 lg:px-16"
       >
+        <div className="w-full text-center md:text-right md:max-w-2xl lg:max-w-3xl md:ml-auto">
         
         {/* Floating Label */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.8 }}
-          className="mb-8 md:mb-10 px-6 py-2 rounded-full border border-[#D4AF37]/30 bg-black/40 backdrop-blur-md text-[#D4AF37] text-xs md:text-sm tracking-wider uppercase flex items-center gap-3 shadow-[0_0_30px_rgba(212,175,55,0.15)] group hover:bg-black/50 transition-colors cursor-default"
+          className="mb-7 md:mb-9 px-5 py-2 rounded-full border border-[#D4AF37]/30 bg-black/40 backdrop-blur-md text-[#D4AF37] text-[10px] md:text-xs tracking-wider uppercase inline-flex items-center gap-3 shadow-[0_0_30px_rgba(212,175,55,0.15)] group hover:bg-black/50 transition-colors cursor-default"
         >
           <Star className="w-3 h-3 fill-[#D4AF37] animate-pulse" />
           <span className="font-bold tracking-widest">مفهوم جديد للسكن الفاخر</span>
@@ -70,7 +71,7 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className="text-6xl sm:text-8xl md:text-9xl lg:text-[10rem] font-bold text-white tracking-tighter leading-none"
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-tighter leading-[0.95]"
           >
             صفوة <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#D4AF37] via-[#F4D03F] to-[#8a6d1c]">عنان</span>
           </motion.h1>
@@ -88,7 +89,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.8 }}
-          className="mt-6 md:mt-8 text-lg sm:text-xl md:text-2xl text-gray-300 max-w-sm sm:max-w-3xl font-light leading-relaxed drop-shadow-lg px-4"
+          className="mt-5 md:mt-7 text-base sm:text-lg md:text-xl text-gray-300 max-w-md md:max-w-xl font-light leading-relaxed drop-shadow-lg"
         >
           نبتكر مساحات سكنية تتناغم فيها <span className="text-white font-medium">الفخامة</span> مع <span className="text-white font-medium">الراحة</span>، لنقدم لك تجربة حياة استثنائية في قلب المملكة.
         </motion.p>
@@ -98,10 +99,10 @@ export default function Hero() {
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 1.2 }}
-           className="mt-8 md:mt-12 flex flex-col items-center gap-6 md:gap-8"
+           className="mt-7 md:mt-10 flex flex-col items-center md:items-start gap-6 md:gap-8"
         >
-          <a href="#projects" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[#D4AF37] text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_50px_-10px_rgba(212,175,55,0.7)] hover:scale-105 hover:bg-[#E5C158]">
-            <span className="relative z-10 text-base md:text-lg">استكشف مشاريعنا</span>
+          <a href="#projects" className="group relative inline-flex items-center gap-3 px-7 py-3.5 bg-[#D4AF37] text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_50px_-10px_rgba(212,175,55,0.7)] hover:scale-105 hover:bg-[#E5C158]">
+            <span className="relative z-10 text-sm md:text-base">استكشف مشاريعنا</span>
             <ArrowRight className="w-5 h-5 relative z-10 rtl:rotate-180 transition-transform group-hover:-translate-x-1" />
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           </a>
@@ -139,12 +140,13 @@ export default function Hero() {
             </div>
         </motion.div>
 
+        </div>
       </motion.div>
 
       {/* Corner Stats - Desktop Only */}
-      <div className="absolute top-10 left-10 hidden lg:block z-20">
+      <div className="absolute top-10 right-10 hidden lg:block z-20">
         <motion.div 
-          initial={{ x: -50, opacity: 0 }}
+          initial={{ x: 50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 1.8 }}
           className="flex items-center gap-5 text-white/90 group cursor-default"

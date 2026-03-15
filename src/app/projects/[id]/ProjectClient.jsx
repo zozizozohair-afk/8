@@ -240,7 +240,7 @@ import {
       <div className="relative h-[60vh] min-h-[500px] w-full overflow-hidden">
         <div className="absolute inset-0 bg-gray-900">
           <img 
-            src={project.main_image || '/images/4.jpg'} 
+            src={project.main_image || '/images/4.png'} 
             alt={project.name} 
             className="w-full h-full object-cover opacity-60"
           />
@@ -487,12 +487,12 @@ import {
                           
                           <div className="w-full md:w-1/3 h-64 md:h-auto bg-gray-100 rounded-2xl overflow-hidden relative group cursor-pointer shadow-md group-hover/card:shadow-lg transition-shadow duration-300"
                                onClick={() => {
-                                 setLightboxImages([{ file_url: unit.main_image || '/images/4.jpg', name: unit.type }]);
+                                 setLightboxImages([{ file_url: unit.main_image || '/images/4.png', name: unit.type }]);
                                  setLightboxIndex(0);
                                }}
                           >
                             <img 
-                              src={unit.main_image || '/images/4.jpg'} 
+                              src={unit.main_image || '/images/4.png'} 
                               alt={unit.type} 
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             />
@@ -771,7 +771,7 @@ import {
               {/* Image Side */}
               <div className="w-full md:w-1/2 h-64 md:h-auto bg-gray-100 relative group">
                 <img 
-                  src={selectedUnit.main_image || '/images/4.jpg'} 
+                  src={selectedUnit.main_image || '/images/4.png'} 
                   alt={selectedUnit.type} 
                   className="w-full h-full object-cover"
                 />

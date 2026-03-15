@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin, ArrowRight, YoutubeIcon, Heart, Globe } from 'lucide-react';
+import { Facebook, Instagram, Mail, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Footer() {
@@ -48,10 +48,9 @@ export default function Footer() {
             </p>
             <div className="flex gap-3">
               {[
-                { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>, href: "#", color: "hover:bg-[#00f2ea]" },
-                { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12 4C12 4 15.3 4 15.3 7.8C15.3 9.1 14.9 9.5 14.2 9.8C14.2 9.8 13.9 9.9 13.9 10.4C13.9 10.8 14.3 11.1 14.5 11.2C14.5 11.2 15.5 11.9 15.5 14.1C15.5 15.9 14.5 16.3 13.4 16.3C13.4 16.3 13.1 16.3 13.1 16.8C13.1 17.3 14.1 17.4 14.9 17.7C15.6 18.1 16.6 18.9 15.5 20C14.5 21.1 12.6 20.4 12 20.4C11.4 20.4 9.5 21.1 8.5 20C7.4 18.9 8.4 18.1 9.1 17.7C9.9 17.4 10.9 17.3 10.9 16.8C10.9 16.3 10.6 16.3 9.5 16.3C8.5 16.3 7.5 15.9 7.5 14.1C7.5 11.9 8.5 11.2 8.5 11.2C8.7 11.1 9.1 10.8 9.1 10.4C9.1 9.9 8.8 9.8 8.8 9.8C8.1 9.5 7.7 9.1 7.7 7.8C7.7 4 11 4 11 4H12Z" /></svg>, href: "#", color: "hover:bg-[#FFFC00] hover:text-black" },
-                { icon: <YoutubeIcon size={20} />, href: "#", color: "hover:bg-[#FF0000]" },
-                { icon: <Instagram size={20} />, href: "#", color: "hover:bg-[#E1306C]" }
+                { icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" /></svg>, href: "https://www.tiktok.com/@safwat.sm", color: "hover:bg-[#00f2ea]" },
+                { icon: <Facebook size={20} />, href: "https://www.facebook.com/share/1DqmY6KymN/?mibextid=wwXIfr", color: "hover:bg-[#1877F2]" },
+                { icon: <Instagram size={20} />, href: "https://www.instagram.com/safwoat.sm/", color: "hover:bg-[#E1306C]" }
               ].map((social, idx) => (
                 <a 
                   key={idx}

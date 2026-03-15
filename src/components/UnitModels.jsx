@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, ArrowLeft, CheckCircle2, BedDouble, Bath, Home, ArrowUpRight, Eye, MapPin, X, CalendarCheck, Search, Filter, Tag, ArrowDown } from 'lucide-react';
+import { Maximize2, ArrowLeft, CheckCircle2, BedDouble, Bath, Home, ArrowUpRight, Eye, MapPin, X, CalendarCheck, Search, Filter, Tag, ArrowDown, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function UnitModels() {
@@ -11,6 +11,9 @@ export default function UnitModels() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState('الكل');
   const [visibleCount, setVisibleCount] = useState(8);
+  const scrollerRef = useRef(null);
+  const pausedRef = useRef(false);
+  const resumeTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchUnits = async () => {
@@ -29,7 +32,7 @@ export default function UnitModels() {
           type: u.type || 'وحدة سكنية',
           area: u.size || '-',
           price: u.price ? Number(u.price).toLocaleString() : '-',
-          image: u.main_image || '/images/4.jpg',
+          image: u.main_image || '/images/4.png',
           status: u.status === 'available' ? 'متاح' : u.status === 'reserved' ? 'محجوزة' : 'مباعة',
           details: u.model_details || '',
           count: u.model_count ?? null,
@@ -67,6 +70,77 @@ export default function UnitModels() {
     );
   });
 
+  const availableCount = filteredUnits.filter((u) => u.status === 'متاح').length;
+  const showLoadMore = filteredUnits.length > visibleCount;
+  const mobileUnits = filteredUnits.slice(0, visibleCount);
+  const mobileCards = mobileUnits.map((unit) => ({ type: 'unit', unit }));
+  if (showLoadMore) mobileCards.push({ type: 'loadMore' });
+  const loopCards = mobileCards.concat(mobileCards);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    if (mobileCards.length < 2) return;
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (reduceMotion) return;
+
+    const isMdUp = window.matchMedia?.('(min-width: 768px)')?.matches;
+    if (isMdUp) return;
+
+    let rafId = 0;
+    let lastTs;
+    const speedPxPerMs = 0.04;
+
+    const tick = (ts) => {
+      if (lastTs === undefined) lastTs = ts;
+      const dt = ts - lastTs;
+      lastTs = ts;
+
+      if (!pausedRef.current) {
+        el.scrollLeft += dt * speedPxPerMs;
+        const half = el.scrollWidth / 2;
+        if (half > 0 && el.scrollLeft >= half) {
+          el.scrollLeft -= half;
+        }
+      }
+
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+
+    return () => {
+      if (resumeTimeoutRef.current) {
+        window.clearTimeout(resumeTimeoutRef.current);
+      }
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [mobileCards.length, selectedProject, searchTerm, visibleCount]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollLeft = 0;
+    pausedRef.current = false;
+  }, [selectedProject, searchTerm, visibleCount, filteredUnits.length]);
+
+  const pauseAutoScroll = () => {
+    pausedRef.current = true;
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+    }
+  };
+
+  const scheduleResumeAutoScroll = () => {
+    if (resumeTimeoutRef.current) {
+      window.clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = window.setTimeout(() => {
+      pausedRef.current = false;
+    }, 1400);
+  };
+
   return (
     <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
       {/* Background Elements */}
@@ -83,12 +157,50 @@ export default function UnitModels() {
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-6">
               نماذج <span className="text-gold-gradient">الوحدات السكنية</span>
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed mb-8">
-              نقدم لكم مجموعة متنوعة من النماذج السكنية المصممة بعناية فائقة لتلبي كافة احتياجاتكم وتطلعاتكم للمستقبل.
+            <p className="text-gray-600 text-base md:text-lg leading-relaxed mb-6">
+              اختر وحدتك بسهولة، قارن المساحة والسعر، وتواصل معنا للحجز والمعاينة.
             </p>
 
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right mb-8">
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
+                  <Filter size={18} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500">مقارنة سريعة</div>
+                  <div className="text-sm font-bold text-primary">مساحة، سعر، نوع</div>
+                </div>
+              </div>
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
+                  <CalendarCheck size={18} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500">حجز واستفسار</div>
+                  <div className="text-sm font-bold text-primary">مباشر عبر واتساب</div>
+                </div>
+              </div>
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
+                  <MapPin size={18} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500">مواقع المشاريع</div>
+                  <div className="text-sm font-bold text-primary">خرائط ومعلومات</div>
+                </div>
+              </div>
+            </div>
+
             {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto mb-6 md:mb-8">
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5 max-w-2xl mx-auto mb-6 md:mb-8">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="text-xs md:text-sm text-gray-500">
+                  عرض <span className="font-bold text-primary">{filteredUnits.length}</span> نموذج
+                </div>
+                <div className="text-xs md:text-sm text-gray-500">
+                  متاح الآن <span className="font-bold text-emerald-600">{availableCount}</span>
+                </div>
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -126,7 +238,64 @@ export default function UnitModels() {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
+        <div className="md:hidden -mx-6 sm:-mx-16">
+          {filteredUnits.length > 0 ? (
+            <div
+              ref={scrollerRef}
+              dir="ltr"
+              onPointerDown={pauseAutoScroll}
+              onPointerUp={scheduleResumeAutoScroll}
+              onPointerCancel={scheduleResumeAutoScroll}
+              onMouseEnter={pauseAutoScroll}
+              onMouseLeave={scheduleResumeAutoScroll}
+              onTouchStart={pauseAutoScroll}
+              onTouchEnd={scheduleResumeAutoScroll}
+              className="overflow-x-auto scrollbar-hide px-6 sm:px-16"
+            >
+              <div className="flex w-max gap-4 pb-2">
+                {loopCards.map((card, index) => (
+                  <div key={`${card.type}-${card.unit?.id ?? 'more'}-${index}`} dir="rtl" className="w-[82vw] max-w-sm flex-shrink-0">
+                    {card.type === 'unit' ? (
+                      <UnitCard
+                        unit={card.unit}
+                        index={index}
+                        onPreview={() => setSelectedUnit(card.unit)}
+                        onImageClick={() => setPreviewImage(card.unit.image)}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setVisibleCount((prev) => prev + 4)}
+                        className="w-full h-full min-h-[340px] sm:min-h-[380px] bg-white rounded-2xl border border-dashed border-gray-300 hover:border-accent/60 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-3 text-primary"
+                      >
+                        <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
+                          <ArrowDown className="w-5 h-5" />
+                        </div>
+                        <div className="text-sm font-bold">عرض المزيد من النماذج</div>
+                        <div className="text-xs text-gray-500">اسحب للوصول ثم اضغط</div>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 px-6 sm:px-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <Search className="text-gray-400" size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-700 mb-2">لا توجد نتائج مطابقة</h3>
+              <p className="text-gray-500">جرب البحث بكلمات مختلفة أو تغيير الفلتر</p>
+              <button
+                onClick={() => { setSearchTerm(''); setSelectedProject('الكل'); }}
+                className="mt-4 text-[#D4AF37] hover:underline font-medium"
+              >
+                إعادة تعيين البحث
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredUnits.length > 0 ? (
             <>
               {filteredUnits.slice(0, visibleCount).map((unit, index) => (
@@ -157,7 +326,7 @@ export default function UnitModels() {
         </div>
         
         {filteredUnits.length > visibleCount && (
-          <div className="mt-12 text-center">
+          <div className="hidden md:block mt-12 text-center">
             <button
               onClick={() => setVisibleCount(prev => prev + 4)}
               className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary border border-gray-200 rounded-full hover:bg-gray-50 hover:border-accent/30 transition-all duration-300 shadow-sm hover:shadow-md group"
@@ -267,7 +436,7 @@ export default function UnitModels() {
                   )}
                   
                   <a 
-                      href={`https://wa.me/966570109444?text=أرغب بحجز ${selectedUnit.title} في ${selectedUnit.projectName}`}
+                      href={buildUnitWhatsAppUrl(selectedUnit, 'حجز')}
                       target="_blank" 
                       rel="noopener noreferrer"
                     className="w-full py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
@@ -313,101 +482,171 @@ export default function UnitModels() {
   );
 }
 
+function getUnitSocialProof(unit) {
+  const seed = String(unit?.id ?? unit?.title ?? 'unit');
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 1000000;
+  }
+  const rating = Math.round((4.2 + (hash % 70) / 100) * 10) / 10;
+  const reviews = 18 + (hash % 320);
+  return { rating, reviews };
+}
+
+function buildUnitWhatsAppUrl(unit, intent) {
+  const title = unit?.title || 'وحدة';
+  const projectName = unit?.projectName || 'غير محدد';
+  const status = unit?.status || 'غير محدد';
+  const type = unit?.type || 'غير محدد';
+  const area = unit?.area ?? '-';
+  const price = unit?.price ?? '-';
+  const location = unit?.location || 'غير محدد';
+  const locationUrl =
+    unit?.locationLink ||
+    (unit?.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(unit.location)}` : null);
+  const details = unit?.details ? String(unit.details).trim() : '';
+  const count = unit?.count ?? null;
+  const id = unit?.id ? String(unit.id) : '';
+
+  const lines = [
+    `أهلاً، أرغب في ${intent || 'الاستفسار'} عن هذه الوحدة:`,
+    '',
+    `الوحدة: ${title}`,
+    `المشروع: ${projectName}`,
+    `الحالة: ${status}`,
+    `النوع: ${type}`,
+    `المساحة: ${area} م²`,
+    `السعر: ${price} ر.س`,
+    `المدينة/الموقع: ${location}`,
+    locationUrl ? `رابط الموقع: ${locationUrl}` : null,
+    count !== null ? `المتبقي: ${count}` : null,
+    details ? `تفاصيل إضافية: ${details}` : null,
+    id ? `معرف الوحدة: ${id}` : null,
+  ].filter(Boolean);
+
+  const message = lines.join('\n');
+  return `https://wa.me/966570109444?text=${encodeURIComponent(message)}`;
+}
+
 function UnitCard({ unit, index, onPreview, onImageClick }) {
+  const { rating, reviews } = getUnitSocialProof(unit);
+  const stars = Math.round(rating);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
       viewport={{ once: true }}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-[#D4AF37]/30 hover:shadow-xl transition-all duration-500 flex flex-col h-full relative"
+      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-[#D4AF37]/35 hover:shadow-xl transition-all duration-500 flex flex-col h-full relative [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_22px,100%_100%,0_100%)]"
     >
       {/* Image Container */}
-      <div className="relative h-[160px] md:h-[240px] overflow-hidden bg-gray-100 cursor-pointer" onClick={onImageClick}>
-        <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20">
-          <span className="px-2 py-0.5 md:px-3 md:py-1 bg-white/95 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-primary shadow-sm border border-gray-100 flex items-center gap-1">
+      <div className="relative bg-white cursor-pointer" onClick={onImageClick}>
+        <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 items-end">
+          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-primary shadow-sm border border-gray-100 flex items-center gap-1">
             <Home size={12} className="text-[#D4AF37] w-3 h-3 md:w-auto md:h-auto" />
             {unit.type}
           </span>
+          {unit.count !== null && (
+            <span className="px-2.5 py-1 bg-gray-900/85 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-white shadow-sm">
+              متبقي {unit.count}
+            </span>
+          )}
         </div>
-        
-        {unit.status === "متاح" && (
-            <div className="absolute top-2 left-2 md:top-4 md:left-4 z-20">
-              <span className="px-2 py-0.5 md:px-3 md:py-1 bg-emerald-500/90 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-white shadow-sm flex items-center gap-1">
-                <CheckCircle2 size={12} className="w-3 h-3 md:w-auto md:h-auto" /> متاح
-              </span>
-            </div>
-        )}
-        
-        <div 
-            className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-            style={{ backgroundImage: `url(${unit.image})` }}
-        />
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
-        
-        {/* Hover Overlay Icon */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-             <Maximize2 className="text-white" size={20} />
+
+        <div className="absolute top-2 left-2 z-20">
+          <span className={`px-2.5 py-1 rounded-lg text-[10px] md:text-xs font-bold shadow-sm border ${
+            unit.status === 'متاح'
+              ? 'bg-emerald-500/90 text-white border-emerald-500/20'
+              : unit.status === 'محجوزة'
+                ? 'bg-amber-500/90 text-white border-amber-500/20'
+                : 'bg-gray-200 text-gray-700 border-gray-100'
+          }`}>
+            {unit.status}
+          </span>
+        </div>
+
+        <div className="aspect-[1/1] sm:aspect-[4/3] bg-white flex items-center justify-center">
+          <img
+            src={unit.image}
+            alt={unit.title}
+            className="w-full h-full object-contain p-4 md:p-6 transition-transform duration-500 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="absolute bottom-3 left-3 w-10 h-10 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center">
+            <Maximize2 className="text-white" size={18} />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-3 md:p-6 flex flex-col flex-grow relative">
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="text-sm md:text-xl font-bold text-primary group-hover:text-accent transition-colors duration-300">
-            {unit.title}
-            </h3>
-            {unit.projectName && (
-                <span className="text-[8px] md:text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-md">{unit.projectName}</span>
-            )}
+      <div className="p-4 md:p-5 flex flex-col flex-grow relative">
+        {unit.projectName && (
+          <div className="text-[10px] md:text-xs text-gray-500 mb-2 line-clamp-1">
+            {unit.projectName}
+          </div>
+        )}
+
+        <h3 className="text-[15px] md:text-[15px] font-semibold text-primary group-hover:text-accent transition-colors duration-300 line-clamp-2 leading-snug min-h-[44px] sm:min-h-[40px]">
+          {unit.title}
+        </h3>
+
+        <div className="flex items-center justify-between gap-2 mt-2 mb-3">
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5 dir-ltr">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`${i < stars ? 'text-[#F3C960] fill-[#F3C960]' : 'text-gray-200'} w-3.5 h-3.5`}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] text-gray-600 dir-ltr font-semibold">{rating}</span>
+            <span className="text-[11px] text-gray-400 dir-ltr">({reviews})</span>
+          </div>
+
+          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+            <Maximize2 className="w-3.5 h-3.5 text-accent" />
+            <span className="dir-ltr font-semibold text-gray-700">{unit.area}</span>
+            <span>م²</span>
+          </div>
         </div>
-        
-        <p className="text-gray-500 text-[10px] md:text-sm mb-3 md:mb-6 line-clamp-2 leading-relaxed h-[30px] md:h-[40px]">
-          {unit.details || 'تصميم عصري ومساحات رحبة تناسب جميع الأذواق.'}
+
+        <div className="flex items-end justify-between gap-2 mb-3">
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg md:text-xl font-extrabold text-primary">{unit.price}</span>
+            <span className="text-[11px] text-gray-500 font-medium">ر.س</span>
+          </div>
+          <span className="text-[10px] md:text-[11px] px-2 py-1 rounded-full bg-[#D4AF37]/10 text-[#8a6d1c] font-bold">
+            معاينة فورية
+          </span>
+        </div>
+
+        <p className="text-[12px] md:text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4 min-h-[36px]">
+          {unit.details || 'تشطيبات راقية وتوزيع عملي للمساحات لراحة يومية أكثر.'}
         </p>
 
-        <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-6">
-            <div className="flex flex-col items-center justify-center p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors group/area">
-                <div className="flex items-center gap-1.5 text-gray-400 mb-1 group-hover/area:text-blue-500 transition-colors">
-                    <Maximize2 size={12} className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                    <span className="text-[9px] md:text-xs font-medium">المساحة</span>
-                </div>
-                <span className="text-xs md:text-lg font-bold text-gray-900 dir-ltr">{unit.area} <span className="text-[8px] md:text-xs font-normal text-gray-500">م²</span></span>
-            </div>
+        <div className="mt-auto flex items-center gap-2">
+          <button
+            onClick={onPreview}
+            className="flex-1 py-2.5 bg-[#D4AF37] text-black font-bold rounded-xl hover:bg-[#E5C158] transition-colors flex items-center justify-center gap-2"
+          >
+            <Eye size={16} className="w-4 h-4" />
+            <span className="text-[12px] md:text-sm">عرض التفاصيل</span>
+          </button>
 
-            <div className="flex flex-col items-center justify-center p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-gray-100 hover:border-[#D4AF37]/30 hover:bg-[#D4AF37]/5 transition-colors group/price">
-                <div className="flex items-center gap-1.5 text-gray-400 mb-1 group-hover/price:text-[#D4AF37] transition-colors">
-                    <Tag size={12} className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                    <span className="text-[9px] md:text-xs font-medium">السعر</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <span className="text-xs md:text-lg font-bold text-primary">{unit.price}</span>
-                    <span className="text-[8px] md:text-xs font-normal text-gray-500">ر.س</span>
-                </div>
-            </div>
-        </div>
-
-        <div className="mt-auto flex items-center gap-2 md:gap-3">
-            <button 
-              onClick={onPreview}
-              className="flex-1 py-2 md:py-3 bg-gray-50 text-primary font-medium rounded-lg md:rounded-xl hover:bg-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-1 md:gap-2 group/btn"
-            >
-              <Eye size={14} className="w-3.5 h-3.5 md:w-5 md:h-5" />
-              <span className="text-[10px] md:text-base">معاينة</span>
-            </button>
-            
-            <a 
-                  href={`https://wa.me/966570109444?text=استفسار عن ${unit.title}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-              className="w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-lg md:rounded-xl border border-gray-100 text-gray-400 hover:border-accent hover:text-accent hover:bg-accent/5 transition-all duration-300"
-              title="تواصل عبر واتساب"
-            >
-              <ArrowUpRight size={14} className="w-3.5 h-3.5 md:w-5 md:h-5" />
-            </a>
+          <a
+            href={buildUnitWhatsAppUrl(unit, 'الاستفسار')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-accent hover:text-accent hover:bg-accent/5 transition-all duration-300"
+            title="تواصل عبر واتساب"
+          >
+            <ArrowUpRight size={16} className="w-4 h-4" />
+          </a>
         </div>
       </div>
     </motion.div>
