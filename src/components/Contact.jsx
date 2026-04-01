@@ -45,7 +45,7 @@ ${message}`.trim();
     } else if (item.type === 'email') {
       window.location.href = `mailto:${item.details[0]}`;
     } else if (item.type === 'address') {
-      window.open('https://maps.app.goo.gl/pVDXxh6RvbsfU6QY7', '_blank');
+      window.open('https://maps.app.goo.gl/3KkLHsdk6EKhaMVi8', '_blank');
     }
   };
 
