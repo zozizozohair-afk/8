@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, ArrowLeft, CheckCircle2, BedDouble, Bath, Home, ArrowUpRight, Eye, MapPin, X, CalendarCheck, Search, Filter, Tag, ArrowDown, Star } from 'lucide-react';
+import { Maximize2, ArrowLeft, CheckCircle2, BedDouble, Bath, Home, ArrowUpRight, Eye, MapPin, X, CalendarCheck, Search, Filter, Tag, ArrowDown, Star, ChevronDown } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function UnitModels() {
@@ -10,7 +10,13 @@ export default function UnitModels() {
   const [previewImage, setPreviewImage] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState('الكل');
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [selectedType, setSelectedType] = useState('الكل');
+  const [selectedPriceRange, setSelectedPriceRange] = useState('الكل');
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
+  const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [isProjectOpen, setIsProjectOpen] = useState(false);
+  const visibleCountRef = useState(8);
+  const [visibleCount, setVisibleCount] = visibleCountRef;
   const scrollerRef = useRef(null);
   const pausedRef = useRef(false);
   const resumeTimeoutRef = useRef(null);
@@ -48,11 +54,30 @@ export default function UnitModels() {
   }, []);
 
   const projects = ['الكل', ...new Set(units.map(u => u.projectName).filter(Boolean))];
+  const unitTypes = ['الكل', ...Array.from(new Set(units.map(u => u.type).filter(Boolean)))];
+  const PRICE_RANGES = [
+    { label: 'الكل', min: 0, max: Infinity },
+    { label: 'أقل من 500 ألف', min: 0, max: 500_000 },
+    { label: '500 ألف - 800 ألف', min: 500_000, max: 800_000 },
+    { label: '800 ألف - 1.2 مليون', min: 800_000, max: 1_200_000 },
+    { label: '1.2 مليون - 1.8 مليون', min: 1_200_000, max: 1_800_000 },
+    { label: '1.8 مليون فما فوق', min: 1_800_000, max: Infinity },
+  ];
+
+  const getRange = () => PRICE_RANGES.find(r => r.label === selectedPriceRange) ?? PRICE_RANGES[0];
 
   const filteredUnits = units.filter(unit => {
     const matchesProject = selectedProject === 'الكل' || unit.projectName === selectedProject;
-    
-    if (!matchesProject) return false;
+    const matchesType = selectedType === 'الكل' || unit.type === selectedType;
+    const matchesPrice = (() => {
+      if (selectedPriceRange === 'الكل') return true;
+      const range = getRange();
+      const numericPrice = unit.price ? Number(String(unit.price).replace(/,/g, '')) : null;
+      if (numericPrice === null || Number.isNaN(numericPrice)) return false;
+      return numericPrice >= range.min && numericPrice < range.max;
+    })();
+
+    if (!matchesProject || !matchesType || !matchesPrice) return false;
 
     if (!searchTerm) return true;
 
@@ -140,97 +165,116 @@ export default function UnitModels() {
   };
 
   return (
-    <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
+    <section className="py-20 md:py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
       {/* Background Elements - Antique Bronze */}
       <div className="absolute top-0 right-0 w-1/2 h-full bg-[#8B6A14]/[0.03] -skew-x-12 translate-x-1/3 pointer-events-none" />
       
       <div className="container-custom relative z-10">
-        <div className="text-center mb-12 max-w-3xl mx-auto">
+        <div className="mb-8 md:mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
+            className="flex flex-col md:flex-row md:items-end md:justify-between gap-5"
           >
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight">
-              نماذج <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">الوحدات السكنية</span>
-            </h2>
-            <p className="text-gray-600 text-base md:text-lg md:text-xl leading-relaxed mb-6 font-light">
-              اختر وحدتك بسهولة، قارن المساحة والسعر، وتواصل معنا للحجز والمعاينة.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right mb-8">
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
-                  <Filter size={18} strokeWidth={2.25} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs text-gray-500">مقارنة سريعة</div>
-                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">مساحة، سعر، نوع</div>
-                </div>
-              </div>
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
-                  <CalendarCheck size={18} strokeWidth={2.25} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs text-gray-500">حجز واستفسار</div>
-                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">مباشر عبر واتساب</div>
-                </div>
-              </div>
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
-                  <MapPin size={18} strokeWidth={2.25} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs text-gray-500">مواقع المشاريع</div>
-                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">خرائط ومعلومات</div>
+            <div className="flex items-end gap-3 md:gap-4">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                  نماذج <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">الوحدات السكنية</span>
+                </h2>
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 font-medium flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8B6A14]/8 text-[#6B5210] ring-1 ring-[#8B6A14]/12 font-extrabold">
+                    <Tag size={14} strokeWidth={2.25} />
+                    <span>{filteredUnits.length}</span>
+                    <span>نموذج متاح للتصفح</span>
+                  </span>
+                  <span className="hidden sm:inline text-gray-300">|</span>
+                  <span className="hidden sm:inline-flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="font-bold text-gray-700">{availableCount}</span>
+                    <span>متاح الآن للحجز</span>
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-5 max-w-2xl mx-auto mb-6 md:mb-8">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div className="text-xs md:text-sm text-gray-500">
-                  عرض <span className="font-extrabold text-[#8B6A14]">{filteredUnits.length}</span> نموذج
-                </div>
-                <div className="text-xs md:text-sm text-gray-500">
-                  متاح الآن <span className="font-extrabold text-emerald-600">{availableCount}</span>
-                </div>
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="ابحث عن وحدة، سعر، مساحة، أو مشروع..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full py-3 md:py-4 pr-10 md:pr-12 pl-5 md:pl-6 bg-white rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8B6A14]/20 focus:border-[#8B6A14] transition-all text-sm md:text-base text-gray-700 placeholder:text-xs md:placeholder:text-base placeholder:text-gray-400"
-                />
-                <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-[#8B6A14]/60">
-                  <Search size={18} className="md:w-5 md:h-5" strokeWidth={2.25} />
-                </div>
-              </div>
-            </div>
+            {/* Single Compact Search Card */}
+            <div className="relative w-full md:max-w-none lg:w-full xl:max-w-none">
+              <div className="relative bg-white rounded-[22px] md:rounded-2xl border border-gray-100 shadow-[0_8px_30px_-12px_rgba(74,56,10,0.12)] ring-1 ring-black/[0.02] p-3 md:p-3.5 lg:p-4 z-[1]">
+                <div className="flex flex-col lg:flex-row gap-2.5 md:gap-3 lg:gap-2.5 items-stretch">
+                  {/* Search text input */}
+                  <div className="relative flex-1 min-w-0 lg:min-w-[300px] order-1">
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8B6A14]/60 pointer-events-none flex items-center justify-center">
+                      <Search size={18} className="md:w-[19px] md:h-[19px]" strokeWidth={2.25} />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="ابحث باسم الوحدة، المشروع، المساحة أو السعر..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full py-3 md:py-3.5 pr-11 md:pr-12 pl-3 md:pl-4 bg-gray-50 hover:bg-white rounded-2xl border border-gray-200 focus:border-[#8B6A14] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#8B6A14]/8 transition-all duration-200 text-sm md:text-[15px] text-gray-700 placeholder:text-[12px] md:placeholder:text-sm placeholder:text-gray-400"
+                    />
+                  </div>
 
-            {/* Project Filters */}
-            <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible justify-start md:justify-center gap-2 md:gap-3 mb-6 md:mb-8 pb-2 md:pb-0 scrollbar-hide px-4 md:px-0 -mx-4 md:mx-0">
-              {projects.map((project) => (
-                <button
-                  key={project}
-                  onClick={() => setSelectedProject(project)}
-                  className={`
-                    whitespace-nowrap flex-shrink-0
-                    px-4 py-2 md:px-5 md:py-2.5 rounded-2xl text-[11px] md:text-sm font-semibold transition-all duration-300 tracking-wide
-                    ${selectedProject === project 
-                      ? 'bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] shadow-md md:shadow-lg shadow-[#8B6A14]/25 scale-105 ring-1 ring-[#8B6A14]/20' 
-                      : 'bg-white text-gray-600 border border-gray-100 hover:border-[#8B6A14]/25 hover:text-[#8B6A14] hover:bg-[#8B6A14]/[0.02] shadow-sm'
-                    }
-                  `}
-                >
-                  {project}
-                </button>
-              ))}
+                  {/* Project Filter Dropdown */}
+                  <DropdownSelect
+                    label="المشروع"
+                    value={selectedProject}
+                    options={projects}
+                    isOpen={isProjectOpen}
+                    onToggle={() => { setIsProjectOpen(v => !v); setIsTypeOpen(false); setIsPriceOpen(false); }}
+                    onClose={() => setIsProjectOpen(false)}
+                    onSelect={(opt) => { setSelectedProject(opt); setIsProjectOpen(false); setVisibleCount(8); }}
+                    icon={<Home size={16} strokeWidth={2.25} />}
+                    className="order-3 md:order-2 md:w-[165px]"
+                  />
+
+                  {/* Type Filter Dropdown */}
+                  <DropdownSelect
+                    label="نوع الوحدة"
+                    value={selectedType}
+                    options={unitTypes}
+                    isOpen={isTypeOpen}
+                    onToggle={() => { setIsTypeOpen(v => !v); setIsProjectOpen(false); setIsPriceOpen(false); }}
+                    onClose={() => setIsTypeOpen(false)}
+                    onSelect={(opt) => { setSelectedType(opt); setIsTypeOpen(false); setVisibleCount(8); }}
+                    icon={<Home size={16} strokeWidth={2.25} />}
+                    className="order-2 md:order-3 md:w-[155px]"
+                  />
+
+                  {/* Price Filter Dropdown */}
+                  <DropdownSelect
+                    label="نطاق السعر"
+                    value={selectedPriceRange}
+                    options={PRICE_RANGES.map(r => r.label)}
+                    isOpen={isPriceOpen}
+                    onToggle={() => { setIsPriceOpen(v => !v); setIsProjectOpen(false); setIsTypeOpen(false); }}
+                    onClose={() => setIsPriceOpen(false)}
+                    onSelect={(opt) => { setSelectedPriceRange(opt); setIsPriceOpen(false); setVisibleCount(8); }}
+                    icon={<Filter size={16} strokeWidth={2.25} />}
+                    className="order-4 md:w-[185px]"
+                  />
+
+                  {/* Reset Filters */}
+                  {(searchTerm || selectedProject !== 'الكل' || selectedType !== 'الكل' || selectedPriceRange !== 'الكل') && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSelectedProject('الكل');
+                        setSelectedType('الكل');
+                        setSelectedPriceRange('الكل');
+                        setVisibleCount(8);
+                      }}
+                      className="order-5 flex items-center justify-center gap-1.5 px-3.5 py-2.5 md:py-3 rounded-2xl border border-gray-200 text-[12px] md:text-sm font-extrabold text-gray-600 hover:text-[#6B5210] hover:border-[#8B6A14]/35 hover:bg-[#8B6A14]/5 transition-all tracking-wide"
+                    >
+                      <X size={15} strokeWidth={2.5} />
+                      <span className="hidden sm:inline">إعادة</span>
+                      <span className="sm:hidden">مسح</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
           </motion.div>
@@ -649,5 +693,85 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function DropdownSelect({ label, value, options, isOpen, onToggle, onClose, onSelect, icon, className = '' }) {
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onToggle && onToggle(); }}
+        onBlur={() => {
+          // Close on next tick to allow option click
+          setTimeout(() => onClose && onClose(), 160);
+        }}
+        className={`w-full h-full px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-2 md:gap-3 rounded-2xl border transition-all duration-200 text-right ${
+          isOpen || value !== 'الكل'
+            ? 'bg-white border-[#8B6A14]/35 text-[#4A380A] ring-4 ring-[#8B6A14]/8 shadow-sm'
+            : 'bg-gray-50 hover:bg-white border-gray-200 text-gray-700 hover:border-[#8B6A14]/20'
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className={`shrink-0 w-8 h-8 md:w-8.5 md:h-8.5 rounded-xl flex items-center justify-center transition-colors ${
+            value !== 'الكل' ? 'bg-[#8B6A14]/10 text-[#8B6A14]' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {icon || <Filter size={16} strokeWidth={2.25} />}
+          </div>
+          <div className="flex flex-col items-start min-w-0">
+            <span className="text-[10px] md:text-[11px] text-gray-400 font-bold tracking-wide">{label}</span>
+            <span className="text-[13px] md:text-sm font-extrabold tracking-tight truncate">{value}</span>
+          </div>
+        </div>
+        <ChevronDown
+          size={17}
+          strokeWidth={2.5}
+          className={`shrink-0 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-[#8B6A14]' : 'text-gray-400'
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute z-[80] top-[calc(100%+10px)] right-0 w-full sm:min-w-[240px] max-h-[340px] overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-[0_20px_50px_-18px_rgba(74,56,10,0.28)] ring-1 ring-black/[0.03]"
+          >
+            <div className="overflow-y-auto custom-scrollbar py-2">
+              {options.map((option, optIndex) => {
+                const selected = option === value;
+                return (
+                  <button
+                    key={`${option}-${optIndex}`}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect && onSelect(option);
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-[13px] md:text-sm transition-colors text-right ${
+                      selected
+                        ? 'bg-[#8B6A14]/8 text-[#4A380A] font-extrabold'
+                        : 'text-gray-700 hover:bg-gray-50 font-semibold'
+                    }`}
+                  >
+                    <span className="truncate">{option}</span>
+                    {selected && (
+                      <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#B8953E] to-[#6B5210] text-white flex items-center justify-center shadow-sm ring-1 ring-white/40">
+                        <CheckCircle2 size={13} strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
