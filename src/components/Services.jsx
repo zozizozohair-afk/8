@@ -100,10 +100,10 @@ export default function Services() {
   };
 
   return (
-    <section id="services" className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-      {/* Decorative Elements */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-      <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+    <section id="services" className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
+      {/* Decorative Elements - Antique Bronze */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#8B6A14]/20 to-transparent" />
+      <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] bg-[#8B6A14]/5 rounded-full blur-3xl pointer-events-none" />
       
       <div className="container-custom relative z-10">
         <div className="text-center mb-20 max-w-3xl mx-auto">
@@ -112,16 +112,16 @@ export default function Services() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold text-primary mb-6"
+            className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight"
           >
-            خدماتنا <span className="text-gold-gradient">المتكاملة</span>
+            خدماتنا <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">المتكاملة</span>
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
-            className="text-gray-600 text-lg leading-relaxed"
+            className="text-gray-600 text-lg md:text-xl leading-relaxed font-light"
           >
             نقدم مجموعة شاملة من الخدمات العقارية والفندقية المصممة لتلبية احتياجاتك بأعلى معايير الجودة والاحترافية.
           </motion.p>
@@ -145,17 +145,17 @@ export default function Services() {
                 <div
                   key={`${service.title}-${index}`}
                   dir="rtl"
-                  className="w-[88vw] max-w-sm flex-shrink-0 group bg-white rounded-2xl p-7 border border-gray-200 shadow-md hover:shadow-xl hover:border-[#B8860B]/35 transition-all duration-500 relative flex flex-col h-full overflow-hidden ring-1 ring-black/5"
+                  className="w-[88vw] max-w-sm flex-shrink-0 group bg-white rounded-2xl p-7 border border-gray-200 shadow-md hover:shadow-xl hover:border-[#8B6A14]/40 transition-all duration-500 relative flex flex-col h-full overflow-hidden ring-1 ring-black/5"
                 >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent group-hover:via-[#B8860B] transition-all duration-700" />
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8B6A14] to-transparent group-hover:via-[#6B5210] transition-all duration-700" />
 
                   <div className="mb-5 relative">
-                    <div className="w-14 h-14 bg-gold-gradient rounded-2xl flex items-center justify-center group-hover:bg-[#B8860B] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#D4AF37]/25">
-                      <service.icon className="w-7 h-7 text-white transition-colors duration-500" />
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] rounded-2xl flex items-center justify-center group-hover:from-[#9C7C20] group-hover:to-[#7A6212] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#8B6A14]/20">
+                      <service.icon className="w-7 h-7 text-[#FAF3E0] transition-colors duration-500" strokeWidth={2.25} />
                     </div>
                   </div>
 
-                  <h3 className="text-2xl font-bold text-[#D4AF37] mb-3 group-hover:text-[#B8860B] transition-colors duration-300">
+                  <h3 className="text-2xl font-extrabold text-[#8B6A14] mb-3 group-hover:text-[#6B5210] transition-colors duration-300 tracking-tight">
                     {service.title}
                   </h3>
 
@@ -166,7 +166,7 @@ export default function Services() {
                   <div className="space-y-3 mb-6">
                     {service.features.map((feature, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
-                        <CheckCircle2 className="w-4 h-4 text-[#D4AF37] flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-[#8B6A14] flex-shrink-0" strokeWidth={2.25} />
                         {feature}
                       </div>
                     ))}
@@ -176,10 +176,10 @@ export default function Services() {
                     href={`https://wa.me/966570109444?text=أهلاً، أرغب في الاستفسار عن ${service.title}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-between w-full px-6 py-3.5 rounded-xl bg-[#D4AF37] text-white font-bold group-hover:bg-[#B8860B] transition-all duration-300 mt-auto shadow-md shadow-[#D4AF37]/25 text-base"
+                    className="inline-flex items-center justify-between w-full px-6 py-3.5 rounded-xl bg-gradient-to-br from-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-bold group-hover:from-[#9C7C20] group-hover:to-[#7A6212] transition-all duration-300 mt-auto shadow-md shadow-[#8B6A14]/25 text-base"
                   >
                     <span>{service.action}</span>
-                    <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+                    <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" strokeWidth={2.25} />
                   </a>
                 </div>
               ))}
@@ -195,18 +195,18 @@ export default function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="group bg-white rounded-2xl p-8 border border-[#D4AF37]/10 shadow-sm hover:shadow-xl hover:border-[#B8860B]/30 transition-all duration-500 relative flex flex-col h-full overflow-hidden"
+              className="group bg-white rounded-2xl p-8 border border-[#8B6A14]/10 shadow-sm hover:shadow-xl hover:border-[#8B6A14]/35 transition-all duration-500 relative flex flex-col h-full overflow-hidden"
             >
-              {/* Top Accent Line */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent group-hover:via-[#B8860B] transition-all duration-700" />
+              {/* Top Accent Line - Antique Bronze */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8B6A14] to-transparent group-hover:via-[#6B5210] transition-all duration-700" />
               
               <div className="mb-6 relative">
-                <div className="w-14 h-14 bg-gold-gradient rounded-2xl flex items-center justify-center group-hover:bg-[#B8860B] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#D4AF37]/20">
-                  <service.icon className="w-7 h-7 text-white transition-colors duration-500" />
+                <div className="w-14 h-14 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] rounded-2xl flex items-center justify-center group-hover:from-[#9C7C20] group-hover:to-[#7A6212] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#8B6A14]/18 ring-1 ring-[#8B6A14]/10">
+                  <service.icon className="w-7 h-7 text-[#FAF3E0] transition-colors duration-500" strokeWidth={2.25} />
                 </div>
               </div>
 
-              <h3 className="text-2xl font-bold text-[#D4AF37] mb-4 group-hover:text-[#B8860B] transition-colors duration-300">
+              <h3 className="text-2xl font-extrabold text-[#8B6A14] mb-4 group-hover:text-[#6B5210] transition-colors duration-300 tracking-tight">
                 {service.title}
               </h3>
               
@@ -217,7 +217,7 @@ export default function Services() {
               <div className="space-y-4 mb-8">
                 {service.features.map((feature, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
-                    <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#8B6A14]" strokeWidth={2.25} />
                     {feature}
                   </div>
                 ))}
@@ -227,10 +227,10 @@ export default function Services() {
                     href={`https://wa.me/966570109444?text=أهلاً، أرغب في الاستفسار عن ${service.title}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                className="inline-flex items-center justify-between w-full px-6 py-3 rounded-xl bg-[#D4AF37] text-white font-medium group-hover:bg-[#B8860B] transition-all duration-300 mt-auto shadow-md shadow-[#D4AF37]/20"
+                className="inline-flex items-center justify-between w-full px-6 py-3 rounded-xl bg-gradient-to-br from-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-semibold group-hover:from-[#9C7C20] group-hover:to-[#7A6212] transition-all duration-300 mt-auto shadow-md shadow-[#8B6A14]/18 ring-1 ring-[#8B6A14]/10 hover:ring-[#8B6A14]/30"
               >
                 <span>{service.action}</span>
-                <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" strokeWidth={2.25} />
               </a>
             </motion.div>
           ))}

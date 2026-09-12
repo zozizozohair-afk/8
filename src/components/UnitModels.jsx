@@ -47,10 +47,8 @@ export default function UnitModels() {
     fetchUnits();
   }, []);
 
-  // Extract unique projects
   const projects = ['الكل', ...new Set(units.map(u => u.projectName).filter(Boolean))];
 
-  // Filter units based on search and project selection
   const filteredUnits = units.filter(unit => {
     const matchesProject = selectedProject === 'الكل' || unit.projectName === selectedProject;
     
@@ -142,9 +140,9 @@ export default function UnitModels() {
   };
 
   return (
-    <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-[#D4AF37]/3 -skew-x-12 translate-x-1/3 pointer-events-none" />
+    <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
+      {/* Background Elements - Antique Bronze */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-[#8B6A14]/[0.03] -skew-x-12 translate-x-1/3 pointer-events-none" />
       
       <div className="container-custom relative z-10">
         <div className="text-center mb-12 max-w-3xl mx-auto">
@@ -154,51 +152,51 @@ export default function UnitModels() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-6">
-              نماذج <span className="text-gold-gradient">الوحدات السكنية</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              نماذج <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">الوحدات السكنية</span>
             </h2>
-            <p className="text-gray-600 text-base md:text-lg leading-relaxed mb-6">
+            <p className="text-gray-600 text-base md:text-lg md:text-xl leading-relaxed mb-6 font-light">
               اختر وحدتك بسهولة، قارن المساحة والسعر، وتواصل معنا للحجز والمعاينة.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right mb-8">
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
-                  <Filter size={18} />
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
+                  <Filter size={18} strokeWidth={2.25} />
                 </div>
                 <div className="flex-1">
                   <div className="text-xs text-gray-500">مقارنة سريعة</div>
-                  <div className="text-sm font-bold text-primary">مساحة، سعر، نوع</div>
+                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">مساحة، سعر، نوع</div>
                 </div>
               </div>
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
-                  <CalendarCheck size={18} />
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
+                  <CalendarCheck size={18} strokeWidth={2.25} />
                 </div>
                 <div className="flex-1">
                   <div className="text-xs text-gray-500">حجز واستفسار</div>
-                  <div className="text-sm font-bold text-primary">مباشر عبر واتساب</div>
+                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">مباشر عبر واتساب</div>
                 </div>
               </div>
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
-                  <MapPin size={18} />
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 hover:border-[#8B6A14]/25 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center">
+                  <MapPin size={18} strokeWidth={2.25} />
                 </div>
                 <div className="flex-1">
                   <div className="text-xs text-gray-500">مواقع المشاريع</div>
-                  <div className="text-sm font-bold text-primary">خرائط ومعلومات</div>
+                  <div className="text-sm font-extrabold text-gray-900 tracking-tight">خرائط ومعلومات</div>
                 </div>
               </div>
             </div>
 
             {/* Search Bar */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 md:p-5 max-w-2xl mx-auto mb-6 md:mb-8">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-5 max-w-2xl mx-auto mb-6 md:mb-8">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="text-xs md:text-sm text-gray-500">
-                  عرض <span className="font-bold text-primary">{filteredUnits.length}</span> نموذج
+                  عرض <span className="font-extrabold text-[#8B6A14]">{filteredUnits.length}</span> نموذج
                 </div>
                 <div className="text-xs md:text-sm text-gray-500">
-                  متاح الآن <span className="font-bold text-emerald-600">{availableCount}</span>
+                  متاح الآن <span className="font-extrabold text-emerald-600">{availableCount}</span>
                 </div>
               </div>
               <div className="relative">
@@ -207,10 +205,10 @@ export default function UnitModels() {
                   placeholder="ابحث عن وحدة، سعر، مساحة، أو مشروع..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full py-3 md:py-4 pr-10 md:pr-12 pl-5 md:pl-6 bg-white rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all text-sm md:text-base text-gray-700 placeholder:text-xs md:placeholder:text-base"
+                  className="w-full py-3 md:py-4 pr-10 md:pr-12 pl-5 md:pl-6 bg-white rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8B6A14]/20 focus:border-[#8B6A14] transition-all text-sm md:text-base text-gray-700 placeholder:text-xs md:placeholder:text-base placeholder:text-gray-400"
                 />
-                <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <Search size={18} className="md:w-5 md:h-5" />
+                <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-[#8B6A14]/60">
+                  <Search size={18} className="md:w-5 md:h-5" strokeWidth={2.25} />
                 </div>
               </div>
             </div>
@@ -223,10 +221,10 @@ export default function UnitModels() {
                   onClick={() => setSelectedProject(project)}
                   className={`
                     whitespace-nowrap flex-shrink-0
-                    px-4 py-2 md:px-5 md:py-2.5 rounded-full text-[11px] md:text-sm font-medium transition-all duration-300
+                    px-4 py-2 md:px-5 md:py-2.5 rounded-2xl text-[11px] md:text-sm font-semibold transition-all duration-300 tracking-wide
                     ${selectedProject === project 
-                      ? 'bg-primary text-white shadow-md md:shadow-lg shadow-primary/25 scale-105' 
-                      : 'bg-white text-gray-600 border border-gray-100 hover:border-accent/50 hover:bg-gray-50 shadow-sm'
+                      ? 'bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] shadow-md md:shadow-lg shadow-[#8B6A14]/25 scale-105 ring-1 ring-[#8B6A14]/20' 
+                      : 'bg-white text-gray-600 border border-gray-100 hover:border-[#8B6A14]/25 hover:text-[#8B6A14] hover:bg-[#8B6A14]/[0.02] shadow-sm'
                     }
                   `}
                 >
@@ -265,12 +263,12 @@ export default function UnitModels() {
                     ) : (
                       <button
                         onClick={() => setVisibleCount((prev) => prev + 4)}
-                        className="w-full h-full min-h-[340px] sm:min-h-[380px] bg-white rounded-2xl border border-dashed border-gray-300 hover:border-accent/60 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-3 text-primary"
+                        className="w-full h-full min-h-[340px] sm:min-h-[380px] bg-white rounded-2xl border border-dashed border-gray-300 hover:border-[#8B6A14]/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-3 text-[#8B6A14]"
                       >
-                        <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/10 text-[#B8860B] flex items-center justify-center">
-                          <ArrowDown className="w-5 h-5" />
+                        <div className="w-12 h-12 rounded-2xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center ring-1 ring-[#8B6A14]/10">
+                          <ArrowDown className="w-5 h-5" strokeWidth={2.25} />
                         </div>
-                        <div className="text-sm font-bold">عرض المزيد من النماذج</div>
+                        <div className="text-sm font-extrabold tracking-tight">عرض المزيد من النماذج</div>
                         <div className="text-xs text-gray-500">اسحب للوصول ثم اضغط</div>
                       </button>
                     )}
@@ -281,13 +279,13 @@ export default function UnitModels() {
           ) : (
             <div className="text-center py-12 px-6 sm:px-16">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <Search className="text-gray-400" size={32} />
+                <Search className="text-gray-400" size={32} strokeWidth={2.25} />
               </div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">لا توجد نتائج مطابقة</h3>
+              <h3 className="text-xl font-extrabold text-gray-700 mb-2 tracking-tight">لا توجد نتائج مطابقة</h3>
               <p className="text-gray-500">جرب البحث بكلمات مختلفة أو تغيير الفلتر</p>
               <button
                 onClick={() => { setSearchTerm(''); setSelectedProject('الكل'); }}
-                className="mt-4 text-[#D4AF37] hover:underline font-medium"
+                className="mt-4 text-[#8B6A14] hover:underline font-semibold"
               >
                 إعادة تعيين البحث
               </button>
@@ -311,13 +309,13 @@ export default function UnitModels() {
           ) : (
             <div className="col-span-full text-center py-12">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <Search className="text-gray-400" size={32} />
+                <Search className="text-gray-400" size={32} strokeWidth={2.25} />
               </div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">لا توجد نتائج مطابقة</h3>
+              <h3 className="text-xl font-extrabold text-gray-700 mb-2 tracking-tight">لا توجد نتائج مطابقة</h3>
               <p className="text-gray-500">جرب البحث بكلمات مختلفة أو تغيير الفلتر</p>
               <button 
                 onClick={() => { setSearchTerm(''); setSelectedProject('الكل'); }}
-                className="mt-4 text-[#D4AF37] hover:underline font-medium"
+                className="mt-4 text-[#8B6A14] hover:underline font-semibold"
               >
                 إعادة تعيين البحث
               </button>
@@ -329,10 +327,10 @@ export default function UnitModels() {
           <div className="hidden md:block mt-12 text-center">
             <button
               onClick={() => setVisibleCount(prev => prev + 4)}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary border border-gray-200 rounded-full hover:bg-gray-50 hover:border-accent/30 transition-all duration-300 shadow-sm hover:shadow-md group"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] transition-all duration-300 shadow-sm hover:shadow-md group font-semibold tracking-wide"
             >
-              <span className="font-medium">عرض المزيد من النماذج</span>
-              <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+              <span>عرض المزيد من النماذج</span>
+              <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" strokeWidth={2.25} />
             </button>
           </div>
         )}
@@ -340,10 +338,10 @@ export default function UnitModels() {
         <div className="mt-16 text-center">
             <a 
               href="#contact" 
-              className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-full hover:bg-primary/90 hover:scale-105 transition-all duration-300 shadow-lg shadow-primary/20"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] rounded-2xl hover:from-[#9C7C20] hover:to-[#7A6212] hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-[#8B6A14]/25 font-semibold tracking-wide ring-1 ring-[#8B6A14]/20"
             >
-                <span className="font-medium">تواصل معنا للمزيد</span>
-                <ArrowLeft className="w-4 h-4" />
+                <span>تواصل معنا للمزيد</span>
+                <ArrowLeft className="w-4 h-4" strokeWidth={2.25} />
             </a>
         </div>
       </div>
@@ -362,14 +360,14 @@ export default function UnitModels() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl overflow-hidden max-w-4xl w-full shadow-2xl relative flex flex-col md:flex-row max-h-[90vh]"
+              className="bg-white rounded-2xl overflow-hidden max-w-4xl w-full shadow-2xl relative flex flex-col md:flex-row max-h-[90vh] [font-family:var(--font-cairo)]"
               onClick={(e) => e.stopPropagation()}
             >
               <button 
                 onClick={() => setSelectedUnit(null)}
-                className="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
+                className="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur rounded-xl hover:bg-red-50 hover:text-red-500 transition-colors"
               >
-                <X size={20} />
+                <X size={20} strokeWidth={2.25} />
               </button>
 
               {/* Image Section */}
@@ -380,9 +378,9 @@ export default function UnitModels() {
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Maximize2 className="text-white drop-shadow-md" size={32} />
+                  <Maximize2 className="text-white drop-shadow-md" size={32} strokeWidth={2.25} />
                 </div>
-                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-sm font-bold text-primary shadow-sm">
+                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-xl text-sm font-extrabold text-[#8B6A14] shadow-sm ring-1 ring-[#8B6A14]/10">
                   {selectedUnit.projectName}
                 </div>
               </div>
@@ -390,33 +388,33 @@ export default function UnitModels() {
               {/* Details Section */}
               <div className="md:w-1/2 p-8 overflow-y-auto">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedUnit.status === 'متاح' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`px-3 py-1 rounded-2xl text-xs font-extrabold ${selectedUnit.status === 'متاح' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
                     {selectedUnit.status}
                   </span>
                   <span className="text-gray-400 text-sm">#{selectedUnit.type}</span>
                 </div>
 
-                <h3 className="text-3xl font-bold text-primary mb-4">{selectedUnit.title}</h3>
+                <h3 className="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">{selectedUnit.title}</h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-xl">
+                  <div className="bg-gray-50 p-4 rounded-2xl ring-1 ring-black/5">
                     <span className="block text-gray-400 text-xs mb-1">المساحة</span>
-                    <div className="flex items-center gap-2 text-primary font-bold">
-                      <Maximize2 size={18} className="text-accent" />
+                    <div className="flex items-center gap-2 text-gray-900 font-extrabold tracking-tight">
+                      <Maximize2 size={18} className="text-[#8B6A14]" strokeWidth={2.25} />
                       <span>{selectedUnit.area} م²</span>
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-xl">
+                  <div className="bg-gray-50 p-4 rounded-2xl ring-1 ring-black/5">
                     <span className="block text-gray-400 text-xs mb-1">السعر التقريبي</span>
-                    <div className="flex items-center gap-2 text-primary font-bold">
+                    <div className="flex items-center gap-2 text-gray-900 font-extrabold tracking-tight">
                       <span className="text-lg">{selectedUnit.price}</span>
-                      <span className="text-xs font-normal">ر.س</span>
+                      <span className="text-xs font-normal text-gray-500">ر.س</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="mb-8">
-                  <h4 className="font-bold text-gray-800 mb-2">التفاصيل</h4>
+                  <h4 className="font-extrabold text-gray-800 mb-2 tracking-tight">التفاصيل</h4>
                   <p className="text-gray-600 leading-relaxed">
                     {selectedUnit.details || 'يتميز هذا النموذج بتصميم عصري فريد يجمع بين الفخامة والعملية، مع استغلال أمثل للمساحات لتوفير الراحة القصوى للسكان.'}
                   </p>
@@ -428,9 +426,9 @@ export default function UnitModels() {
                       href={selectedUnit.locationLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedUnit.location)}`}
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] transition-colors flex items-center justify-center gap-2"
                     >
-                      <MapPin size={18} className="text-accent" />
+                      <MapPin size={18} className="text-[#8B6A14]" strokeWidth={2.25} />
                       موقع المشروع على الخريطة
                     </a>
                   )}
@@ -439,9 +437,9 @@ export default function UnitModels() {
                       href={buildUnitWhatsAppUrl(selectedUnit, 'حجز')}
                       target="_blank" 
                       rel="noopener noreferrer"
-                    className="w-full py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-2xl bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-extrabold tracking-wide hover:from-[#9C7C20] hover:to-[#7A6212] transition-all shadow-lg shadow-[#8B6A14]/25 flex items-center justify-center gap-2 ring-1 ring-[#8B6A14]/20"
                   >
-                    <CalendarCheck size={18} />
+                    <CalendarCheck size={18} strokeWidth={2.25} />
                     احجز وحدتك الآن
                   </a>
                 </div>
@@ -465,7 +463,7 @@ export default function UnitModels() {
               className="absolute top-6 left-6 text-white/70 hover:text-white transition-colors"
               onClick={() => setPreviewImage(null)}
             >
-              <X size={32} />
+              <X size={32} strokeWidth={2.25} />
             </button>
             <motion.img 
               initial={{ scale: 0.9 }}
@@ -538,24 +536,24 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
       viewport={{ once: true }}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-[#D4AF37]/35 hover:shadow-xl transition-all duration-500 flex flex-col h-full relative [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_22px,100%_100%,0_100%)]"
+      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-[#8B6A14]/35 hover:shadow-xl transition-all duration-500 flex flex-col h-full relative [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_22px,100%_100%,0_100%)]"
     >
       {/* Image Container */}
       <div className="relative bg-white cursor-pointer" onClick={onImageClick}>
         <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 items-end">
-          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-primary shadow-sm border border-gray-100 flex items-center gap-1">
-            <Home size={12} className="text-[#D4AF37] w-3 h-3 md:w-auto md:h-auto" />
+          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-xl text-[10px] md:text-xs font-extrabold text-gray-900 shadow-sm border border-gray-100 flex items-center gap-1 tracking-tight">
+            <Home size={12} className="text-[#8B6A14] w-3 h-3 md:w-auto md:h-auto" strokeWidth={2.25} />
             {unit.type}
           </span>
           {unit.count !== null && (
-            <span className="px-2.5 py-1 bg-gray-900/85 backdrop-blur-md rounded-lg text-[10px] md:text-xs font-bold text-white shadow-sm">
+            <span className="px-2.5 py-1 bg-gray-900/85 backdrop-blur-md rounded-xl text-[10px] md:text-xs font-extrabold text-white shadow-sm ring-1 ring-white/10">
               متبقي {unit.count}
             </span>
           )}
         </div>
 
         <div className="absolute top-2 left-2 z-20">
-          <span className={`px-2.5 py-1 rounded-lg text-[10px] md:text-xs font-bold shadow-sm border ${
+          <span className={`px-2.5 py-1 rounded-xl text-[10px] md:text-xs font-extrabold shadow-sm border tracking-wide ${
             unit.status === 'متاح'
               ? 'bg-emerald-500/90 text-white border-emerald-500/20'
               : unit.status === 'محجوزة'
@@ -576,8 +574,8 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
         </div>
 
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="absolute bottom-3 left-3 w-10 h-10 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center">
-            <Maximize2 className="text-white" size={18} />
+          <div className="absolute bottom-3 left-3 w-10 h-10 rounded-xl bg-black/35 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
+            <Maximize2 className="text-white" size={18} strokeWidth={2.25} />
           </div>
         </div>
       </div>
@@ -590,7 +588,7 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
           </div>
         )}
 
-        <h3 className="text-[15px] md:text-[15px] font-semibold text-primary group-hover:text-accent transition-colors duration-300 line-clamp-2 leading-snug min-h-[44px] sm:min-h-[40px]">
+        <h3 className="text-[15px] md:text-[15px] font-extrabold text-gray-900 group-hover:text-[#8B6A14] transition-colors duration-300 line-clamp-2 leading-snug min-h-[44px] sm:min-h-[40px] tracking-tight">
           {unit.title}
         </h3>
 
@@ -600,27 +598,28 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
-                  className={`${i < stars ? 'text-[#F3C960] fill-[#F3C960]' : 'text-gray-200'} w-3.5 h-3.5`}
+                  className={`${i < stars ? 'text-[#C9A84B] fill-[#C9A84B]' : 'text-gray-200'} w-3.5 h-3.5`}
+                  strokeWidth={2}
                 />
               ))}
             </div>
-            <span className="text-[11px] text-gray-600 dir-ltr font-semibold">{rating}</span>
+            <span className="text-[11px] text-gray-600 dir-ltr font-extrabold tracking-tight">{rating}</span>
             <span className="text-[11px] text-gray-400 dir-ltr">({reviews})</span>
           </div>
 
           <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <Maximize2 className="w-3.5 h-3.5 text-accent" />
-            <span className="dir-ltr font-semibold text-gray-700">{unit.area}</span>
+            <Maximize2 className="w-3.5 h-3.5 text-[#8B6A14]" strokeWidth={2.25} />
+            <span className="dir-ltr font-extrabold text-gray-700 tracking-tight">{unit.area}</span>
             <span>م²</span>
           </div>
         </div>
 
         <div className="flex items-end justify-between gap-2 mb-3">
           <div className="flex items-baseline gap-1">
-            <span className="text-lg md:text-xl font-extrabold text-primary">{unit.price}</span>
+            <span className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{unit.price}</span>
             <span className="text-[11px] text-gray-500 font-medium">ر.س</span>
           </div>
-          <span className="text-[10px] md:text-[11px] px-2 py-1 rounded-full bg-[#D4AF37]/10 text-[#8a6d1c] font-bold">
+          <span className="text-[10px] md:text-[11px] px-2 py-1 rounded-2xl bg-[#8B6A14]/10 text-[#8B6A14] font-extrabold tracking-wide ring-1 ring-[#8B6A14]/10">
             معاينة فورية
           </span>
         </div>
@@ -632,9 +631,9 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
         <div className="mt-auto flex items-center gap-2">
           <button
             onClick={onPreview}
-            className="flex-1 py-2.5 bg-[#D4AF37] text-black font-bold rounded-xl hover:bg-[#E5C158] transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-extrabold tracking-wide rounded-xl hover:from-[#9C7C20] hover:to-[#7A6212] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#8B6A14]/20 ring-1 ring-[#8B6A14]/15"
           >
-            <Eye size={16} className="w-4 h-4" />
+            <Eye size={16} className="w-4 h-4" strokeWidth={2.25} />
             <span className="text-[12px] md:text-sm">عرض التفاصيل</span>
           </button>
 
@@ -642,10 +641,10 @@ function UnitCard({ unit, index, onPreview, onImageClick }) {
             href={buildUnitWhatsAppUrl(unit, 'الاستفسار')}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-accent hover:text-accent hover:bg-accent/5 transition-all duration-300"
+            className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] hover:bg-[#8B6A14]/[0.04] transition-all duration-300"
             title="تواصل عبر واتساب"
           >
-            <ArrowUpRight size={16} className="w-4 h-4" />
+            <ArrowUpRight size={16} className="w-4 h-4" strokeWidth={2.25} />
           </a>
         </div>
       </div>

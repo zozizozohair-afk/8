@@ -1,4 +1,5 @@
 import localFont from "next/font/local";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
@@ -43,6 +44,12 @@ const ibmPlexSansArabic = localFont({
   variable: "--font-ibm-plex",
 });
 
+const cairoFont = Cairo({
+  subsets: ["arabic"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-cairo",
+});
+
 export const metadata = {
   title: "صفوة عنان | للتسويق والتطوير العقاري",
   description:
@@ -55,7 +62,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={ibmPlexSansArabic.variable}>
+      <body className={`${ibmPlexSansArabic.variable} ${cairoFont.variable}`}>
         {children}
         <WhatsAppButton />
       </body>
