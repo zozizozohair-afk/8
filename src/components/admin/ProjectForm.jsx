@@ -1,17 +1,36 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { supabase, supabaseUrl } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { Upload, X, Plus, Save, Image as ImageIcon, FileText, Layout, Home, Loader2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProjectSections from './ProjectSections';
 import ProjectUnits from './ProjectUnits';
 import ProjectFiles from './ProjectFiles';
+import './ProjectForm.css';
+import ProjectLocationPicker from './ProjectLocationPicker';
+
+const editorHelp = {
+  info: ['بيانات المشروع', 'عدّل الاسم والموقع والوصف والصورة الرئيسية، ثم اضغط «حفظ التغييرات». هذه البيانات تظهر للزائر في صفحة المشروع.'],
+  images: ['صور المشروع', 'اضغط «إضافة صور» واختر صورة أو أكثر. حدّد أسفل كل صورة هل هي داخلية أو خارجية أو مخطط. إضافتها وتصنيفها يُحفظان مباشرة.'],
+  sections: ['أقسام المشروع', 'القسم يجمع الوحدات المتشابهة، مثل مبنى أ أو الفلل. أضف القسم أولًا، ثم اربط الوحدات به من «الوحدات». استخدم زر الحفظ داخل نموذج القسم.'],
+  units: ['نماذج الوحدات', 'اضغط «إضافة نموذج»، ثم أكمل بياناته ومخططه وراجع المعاينة قبل الحفظ. يمكنك حفظ النموذج وإضافة آخر مباشرة.'],
+  files: ['ملفات للتحميل', 'أضف الملفات التي تريد أن يحمّلها الزائر، وسمّ كل ملف باسم واضح مثل «مخطط المشروع». اتبع زر الإضافة أو الحفظ داخل هذا القسم.'],
+};
+const steps = ['info', 'images', 'sections', 'units', 'files'];
 
 export default function ProjectForm({ project, onSuccess }) {
   const [activeTab, setActiveTab] = useState('info');
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [projectId, setProjectId] = useState(project?.id || null);
+  const [unitEditorOpen, setUnitEditorOpen] = useState(false);
+  const stepIndex = steps.indexOf(activeTab);
+  const changeStep = (id) => {
+    setActiveTab(id);
+    setMessage(null);
+    requestAnimationFrame(() => document.getElementById('pe-step-title')?.focus());
+  };
 
   // Form States
   const [projectInfo, setProjectInfo] = useState({
@@ -111,12 +130,16 @@ export default function ProjectForm({ project, onSuccess }) {
     }
   };
 
-  const handleSaveProjectInfo = async () => {
+  const handleSaveProjectInfo = async (advance = false) => {
+    if (!projectInfo.name.trim()) {
+        setMessage({ type: 'error', text: 'اكتب اسم المشروع أولًا، ثم احفظ.' });
+        document.getElementById('project-name')?.focus();
+        return;
+    }
     try {
         setLoading(true);
         setMessage(null);
 
-        console.log('Supabase URL (save):', supabaseUrl);
         const dataToSave = { ...projectInfo };
         
         let error;
@@ -172,7 +195,7 @@ export default function ProjectForm({ project, onSuccess }) {
         if (error) throw error;
 
         setMessage({ type: 'success', text: 'تم حفظ بيانات المشروع بنجاح' });
-        if (!projectId) setActiveTab('images'); // Move to next tab on first save
+        if (advance || !projectId) changeStep('images');
     } catch (error) {
         console.error(error);
         setMessage({ type: 'error', text: error.message || 'حدث خطأ أثناء الحفظ' });
@@ -255,31 +278,36 @@ export default function ProjectForm({ project, onSuccess }) {
 
   const TabButton = ({ id, icon: Icon, label, disabled }) => (
     <button
-      onClick={() => !disabled && setActiveTab(id)}
-      disabled={disabled}
+      onClick={() => !disabled && changeStep(id)}
+      disabled={disabled || loading || unitEditorOpen || (activeTab === 'info' && id !== 'info')}
+      type="button"
+      aria-current={activeTab === id ? 'step' : undefined}
+      title={disabled ? 'احفظ بيانات المشروع أولًا لفتح هذا القسم' : label}
       className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all duration-300 border-b-2 ${
         activeTab === id 
           ? 'border-[#D4AF37] text-[#D4AF37] bg-[#D4AF37]/5' 
           : 'border-transparent text-secondary-text hover:text-primary'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <Icon size={18} />
+      <span className="pe-step-number">{steps.indexOf(id) + 1}</span>
       <span>{label}</span>
     </button>
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-border-light overflow-hidden">
+    <div className="project-editor bg-white rounded-xl shadow-sm border border-border-light overflow-hidden">
+      {locationPickerOpen && <ProjectLocationPicker link={projectInfo.link} location={projectInfo.location} onClose={() => setLocationPickerOpen(false)} onSelect={link => { setProjectInfo(previous => ({ ...previous, link })); setLocationPickerOpen(false); }} />}
       {/* Header */}
       <div className="bg-gray-50 px-8 py-6 border-b border-border-light flex justify-between items-center">
         <div>
             <h2 className="text-xl font-medium text-primary">
                 {projectId ? 'تعديل المشروع' : 'إضافة مشروع جديد'}
             </h2>
-            <p className="text-sm text-secondary-text mt-1">أدخل تفاصيل المشروع ومكوناته</p>
+            <p className="text-sm text-secondary-text mt-1">أكمل المشروع خطوة بخطوة. يمكنك الرجوع لأي خطوة، وتجاوز التفاصيل الاختيارية.</p>
         </div>
         {message && (
             <motion.div 
+                role={message.type === 'error' ? 'alert' : 'status'}
                 initial={{ opacity: 0, y: -10 }} 
                 animate={{ opacity: 1, y: 0 }}
                 className={`px-4 py-2 rounded-lg text-sm flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
@@ -291,9 +319,9 @@ export default function ProjectForm({ project, onSuccess }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex overflow-x-auto border-b border-border-light scrollbar-hide">
-        <TabButton id="info" icon={Layout} label="بيانات المشروع" />
-        <TabButton id="images" icon={ImageIcon} label="الصور والميديا" disabled={!projectId} />
+      <div className="pe-steps flex overflow-x-auto border-b border-border-light scrollbar-hide" role="navigation" aria-label="خطوات تجهيز المشروع">
+        <TabButton id="info" icon={Layout} label="البيانات الأساسية" />
+        <TabButton id="images" icon={ImageIcon} label="صور المشروع" disabled={!projectId} />
         <TabButton id="sections" icon={Home} label="الأقسام" disabled={!projectId} />
         <TabButton id="units" icon={Layout} label="الوحدات" disabled={!projectId} />
         <TabButton id="files" icon={FileText} label="الملفات" disabled={!projectId} />
@@ -301,149 +329,55 @@ export default function ProjectForm({ project, onSuccess }) {
 
       {/* Content */}
       <div className="p-8">
+        <h3 id="pe-step-title" tabIndex={-1} className="pe-step-title">الخطوة {stepIndex + 1} من {steps.length}: {editorHelp[activeTab][0]}</h3>
+        <aside className="pe-help" aria-label="تعليمات التعديل">
+          <strong>كيف أعدّل {editorHelp[activeTab][0]}؟</strong>
+          <p>{editorHelp[activeTab][1]}</p>
+          <details><summary>دليل سريع لإدارة المشروع</summary><ol>
+            <li>البيانات الأساسية: اسم المشروع ووصفه وموقعه وصورته الرئيسية.</li>
+            <li>صور المشروع: صور إضافية تظهر في معرض الصور.</li>
+            <li>الأقسام: المباني أو المجموعات التي تتبع لها الوحدات.</li>
+            <li>الوحدات: الشقق أو الفلل وتفاصيل كل وحدة.</li>
+            <li>الملفات: مستندات ومخططات يستطيع الزائر تحميلها.</li>
+          </ol><p>لا تحتاج تعبئة كل الأقسام مرة واحدة. ابدأ بالبيانات الأساسية، وأكمل الباقي عند توفره.</p></details>
+        </aside>
         {/* TAB 1: INFO */}
         {activeTab === 'info' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-4xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">اسم المشروع</label>
-                    <input 
-                        type="text" 
-                        name="name" 
-                        value={projectInfo.name} 
-                        onChange={handleInfoChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all"
-                        placeholder="مثال: أبراج العلياء"
-                    />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pe-info-layout">
+            <div className="pe-info-main">
+              <section className="pe-info-card" aria-labelledby="pe-identity-title">
+                <header><span>01</span><div><h3 id="pe-identity-title">تعريف المشروع</h3><p>ابدأ بما سيتعرف عليه العميل عند زيارة المشروع.</p></div></header>
+                <label className="pe-field" htmlFor="project-name"><span>اسم المشروع <b>مطلوب</b></span><input id="project-name" name="name" value={projectInfo.name} onChange={handleInfoChange} placeholder="مثال: صفوة الروضة" /></label>
+                <label className="pe-field" htmlFor="project-description"><span>نبذة عن المشروع <small>اختياري</small></span><textarea id="project-description" name="description" value={projectInfo.description} onChange={handleInfoChange} rows={5} placeholder="عرّف المشروع في سطرين أو ثلاثة، واذكر أبرز مميزاته…"/><small>مثال: وحدات سكنية عصرية في حي الروضة، بتصاميم واسعة وقريبة من الخدمات.</small></label>
+              </section>
+              <section className="pe-info-card" aria-labelledby="pe-location-title">
+                <header><span>02</span><div><h3 id="pe-location-title">الموقع وحالة المشروع</h3><p>ساعد العميل على معرفة مكان المشروع ومرحلة إنجازه.</p></div></header>
+                <div className="pe-field-row">
+                  <label className="pe-field" htmlFor="project-location"><span>المدينة والحي</span><input id="project-location" name="location" value={projectInfo.location} onChange={handleInfoChange} placeholder="مثال: جدة، حي الروضة"/></label>
+                  <label className="pe-field" htmlFor="project-status"><span>حالة المشروع</span><select id="project-status" name="status" value={projectInfo.status} onChange={handleInfoChange}><option value="upcoming">قريبًا</option><option value="ongoing">قيد الإنشاء</option><option value="completed">مكتمل</option></select></label>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">Slug (الرابط المختصر)</label>
-                    <input 
-                        type="text" 
-                        name="slug" 
-                        value={projectInfo.slug} 
-                        onChange={handleInfoChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500"
-                        placeholder="example-project-name"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">رابط الموقع/الخريطة</label>
-                    <input 
-                        type="text" 
-                        name="link" 
-                        value={projectInfo.link} 
-                        onChange={handleInfoChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all dir-ltr"
-                        placeholder="https://maps.app.goo.gl/..."
-                    />
-                </div>
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-primary mb-2">الوصف</label>
-                    <textarea 
-                        name="description" 
-                        value={projectInfo.description} 
-                        onChange={handleInfoChange}
-                        rows={4}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all"
-                        placeholder="وصف مختصر للمشروع ومميزاته..."
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">الموقع (نص)</label>
-                    <input 
-                        type="text" 
-                        name="location" 
-                        value={projectInfo.location} 
-                        onChange={handleInfoChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all"
-                        placeholder="الحي، المدينة"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">حالة المشروع</label>
-                    <select 
-                        name="status" 
-                        value={projectInfo.status} 
-                        onChange={handleInfoChange}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none transition-all"
-                    >
-                        <option value="upcoming">قريباً</option>
-                        <option value="ongoing">قيد الإنشاء</option>
-                        <option value="completed">مكتمل</option>
-                    </select>
-                </div>
+                <div className="pe-field"><span>الموقع على الخريطة <small>اختياري</small></span><button type="button" className="pe-map-choose" disabled={loading} onClick={() => setLocationPickerOpen(true)}><Home size={17}/>{projectInfo.link ? 'تحديد أو تغيير الموقع على الخريطة' : 'تحديد الموقع على الخريطة'}</button><small>{projectInfo.link ? 'تمت إضافة رابط الموقع. يمكنك تغييره من الخريطة أو تعديل الرابط يدويًا.' : 'افتح الخريطة وحدّد مكان المشروع بنقرة واحدة.'}</small><details className="pe-map-field"><summary>إضافة رابط خرائط يدويًا</summary><label htmlFor="project-map" className="sr-only">رابط الخريطة</label><input id="project-map" name="link" dir="ltr" value={projectInfo.link} onChange={handleInfoChange} placeholder="https://maps.app.goo.gl/..."/></details></div>
+              </section>
+              <details className="pe-advanced"><summary>إعدادات إضافية — الرابط المختصر</summary><label className="pe-field" htmlFor="project-slug"><span>الرابط المختصر</span><input id="project-slug" name="slug" dir="ltr" value={projectInfo.slug} onChange={handleInfoChange} placeholder="example-project"/><small>يمكنك تركه كما هو. عند تغييره استخدم حروفًا إنجليزية وشرطات بين الكلمات.</small></label></details>
             </div>
-
-            {/* Main Image & Brochure */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">الصورة الرئيسية</label>
-                    <div 
-                        onClick={() => mainImageInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all group"
-                    >
-                        {projectInfo.main_image ? (
-                            <div className="relative aspect-video rounded-lg overflow-hidden">
-                                <img src={projectInfo.main_image} alt="Main" className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-white text-sm">تغيير الصورة</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="py-8">
-                                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3 group-hover:text-[#D4AF37]" />
-                                <span className="text-sm text-gray-500">اضغط لرفع صورة</span>
-                            </div>
-                        )}
-                        <input 
-                            ref={mainImageInputRef} 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={handleMainImageUpload} 
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-primary mb-2">بروشور المشروع (PDF)</label>
-                    <div 
-                        onClick={() => brochureInputRef.current?.click()}
-                        className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-[#D4AF37] hover:bg-[#D4AF37]/5 transition-all h-[150px] flex items-center justify-center group"
-                    >
-                         {projectInfo.brochure ? (
-                            <div className="flex items-center gap-3">
-                                <FileText className="text-[#D4AF37] w-8 h-8" />
-                                <span className="text-sm text-primary font-medium">تم رفع الملف</span>
-                            </div>
-                        ) : (
-                            <div>
-                                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:text-[#D4AF37]" />
-                                <span className="text-sm text-gray-500">اضغط لرفع PDF</span>
-                            </div>
-                        )}
-                        <input 
-                            ref={brochureInputRef} 
-                            type="file" 
-                            accept=".pdf" 
-                            className="hidden" 
-                            onChange={handleBrochureUpload} 
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex justify-end pt-6">
-                <button 
-                    onClick={handleSaveProjectInfo}
-                    disabled={loading}
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#C9A24D] via-[#D4AF37] to-[#B89B5E] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-70"
-                >
-                    {loading ? <Loader2 className="animate-spin" /> : <Save size={18} />}
-                    <span>{projectId ? 'حفظ التغييرات' : 'إنشاء المشروع'}</span>
+            <aside className="pe-info-media" aria-label="صورة المشروع والبروشور">
+              <section className="pe-info-card">
+                <header><span><ImageIcon size={18}/></span><div><h3>الصورة الرئيسية</h3><p>تظهر في بطاقة المشروع وأعلى صفحته.</p></div></header>
+                <button type="button" className={`pe-cover-upload ${projectInfo.main_image ? 'has-image' : ''}`} disabled={loading} onClick={() => mainImageInputRef.current?.click()}>
+                  {projectInfo.main_image ? <img src={projectInfo.main_image} alt="الصورة الرئيسية للمشروع"/> : <><Upload size={30}/><strong>اختر صورة المشروع</strong><small>صورة أفقية واضحة تعكس هوية المشروع</small></>}
+                  {projectInfo.main_image && <span>تغيير الصورة</span>}
                 </button>
-            </div>
+                <input ref={mainImageInputRef} type="file" accept="image/*" hidden onChange={handleMainImageUpload}/>
+                <p className="pe-media-hint">بعد رفع الصورة، اضغط «حفظ ومتابعة» لتثبيتها ضمن بيانات المشروع.</p>
+              </section>
+              <section className="pe-info-card">
+                <header><span><FileText size={18}/></span><div><h3>بروشور المشروع <small>اختياري</small></h3><p>ملف تعريفي يستطيع العميل تحميله.</p></div></header>
+                <button type="button" className="pe-brochure-upload" disabled={loading} onClick={() => brochureInputRef.current?.click()}><FileText size={27}/><span><strong>{projectInfo.brochure ? 'البروشور مرفوع' : 'إرفاق البروشور'}</strong><small>{projectInfo.brochure ? 'اضغط لاختيار ملف بديل' : 'اختر ملف PDF من جهازك'}</small></span><Plus size={18}/></button>
+                <input ref={brochureInputRef} type="file" accept=".pdf" hidden onChange={handleBrochureUpload}/>
+                {projectInfo.brochure && <a className="pe-file-preview" href={projectInfo.brochure} target="_blank" rel="noopener noreferrer">معاينة البروشور ↗</a>}
+              </section>
+              <p className="pe-media-hint">الصور الإضافية ومخططات الوحدات لها خطوات مستقلة بعد حفظ هذه البيانات.</p>
+            </aside>
           </motion.div>
         )}
 
@@ -511,9 +445,21 @@ export default function ProjectForm({ project, onSuccess }) {
         )}
 
         {/* Other tabs can be implemented similarly... placeholder for now */}
-        {activeTab === 'sections' && <ProjectSections projectId={projectId} />}
-        {activeTab === 'units' && <ProjectUnits projectId={projectId} />}
-        {activeTab === 'files' && <ProjectFiles projectId={projectId} />}
+        {projectId && <>
+          <div hidden={activeTab !== 'sections'}><ProjectSections projectId={projectId} /></div>
+          <div hidden={activeTab !== 'units'}><ProjectUnits projectId={projectId} onEditingChange={setUnitEditorOpen} /></div>
+          <div hidden={activeTab !== 'files'}><ProjectFiles projectId={projectId} /></div>
+        </>}
+
+        <div className="pe-step-actions" hidden={unitEditorOpen}>
+          <button type="button" disabled={stepIndex === 0 || loading} onClick={() => changeStep(steps[stepIndex - 1])}>السابق</button>
+          <p>{activeTab === 'info' ? 'سنحفظ البيانات الأساسية قبل الانتقال للصور.' : 'احفظ أي نموذج مفتوح من زر الحفظ الخاص به. يمكنك إكمال هذه الخطوة لاحقًا.'}</p>
+          <button type="button" className="pe-next" disabled={loading} onClick={() => {
+            if (activeTab === 'info') handleSaveProjectInfo(true);
+            else if (stepIndex < steps.length - 1) changeStep(steps[stepIndex + 1]);
+            else onSuccess?.();
+          }}>{loading ? 'جارٍ الحفظ أو الرفع…' : activeTab === 'info' ? 'حفظ ومتابعة للصور' : stepIndex === steps.length - 1 ? 'إنهاء والعودة للمشاريع' : `التالي: ${editorHelp[steps[stepIndex + 1]][0]}`}</button>
+        </div>
 
       </div>
     </div>

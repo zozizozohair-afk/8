@@ -1,239 +1,31 @@
 'use client';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Megaphone, Hotel, Home, CheckCircle2, Award, AwardIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { ArrowUpLeft, Plus, Minus } from 'lucide-react';
 
 const services = [
-  {
-    icon: Home,
-    title: "إدارة الأملاك",
-    description: "نقدم خدمات متكاملة لإدارة الأملاك العقارية تشمل إدارة العلاقة مع المستأجرين، تحصيل الإيجارات، متابعة العقود، والحفاظ على قيمة الأصل العقاري وتعظيم العائد الاستثماري.",
-    features: ["تحصيل الإيجارات", "متابعة العقود", "إدارة المستأجرين"],
-    action: "اطلب الخدمة"
-  },
-  {
-    icon: Hotel,
-    title: "إدارة المرافق",
-    description: "إدارة وتشغيل المرافق بكفاءة عالية لضمان استدامة المباني وجودة التشغيل، وتشمل الإشراف اليومي، تنظيم الأعمال التشغيلية، وتحسين كفاءة الاستخدام.",
-    features: ["إشراف يومي", "تشغيل مستدام", "كفاءة استخدام"],
-    action: "تواصل معنا"
-  },
-  {
-    icon: CheckCircle2,
-    title: "الصيانة والأمن",
-    description: "نوفر حلول صيانة شاملة وفق عقود معتمدة تشمل الصيانة الدورية والطارئة، أنظمة الأمن والسلامة، والالتزام بالاشتراطات والأنظمة المعتمدة.",
-    features: ["صيانة دورية", "أنظمة أمنية", "مطابقة للاشتراطات"],
-    action: "احصل على عرض"
-  },
-  {
-    icon: Megaphone,
-    title: "تسويق العقارات",
-    description: "نقدم خدمات تسويق احترافية للعقارات السكنية والتجارية تشمل إعداد الخطط التسويقية، التسويق الرقمي، إدارة الإعلانات، وإبراز المزايا التنافسية للعقار.",
-    features: ["خطط تسويقية", "تسويق رقمي", "إدارة إعلانات"],
-    action: "ابدأ حملتك"
-  },
-  {
-    icon: AwardIcon,
-    title: "خدمات المكاتب",
-    description: "خدمات مخصصة لمكاتب العقار تشمل إدارة الحملات التسويقية، إنشاء الهوية الرقمية، إدارة الحسابات في منصات العقار، ودعم المبيعات وتحسين الظهور.",
-    features: ["هوية رقمية", "إدارة حسابات", "دعم مبيعات"],
-    action: "تعاون معنا"
-  }
+  { title: 'إدارة الأملاك', english: 'PROPERTY MANAGEMENT', description: 'عناية مستمرة بأصولك العقارية، من إدارة العلاقة مع المستأجرين وتحصيل الإيجارات، إلى متابعة العقود والحفاظ على قيمة العقار.', features: ['إدارة المستأجرين', 'متابعة العقود', 'تحصيل الإيجارات'] },
+  { title: 'إدارة المرافق', english: 'FACILITY MANAGEMENT', description: 'نشرف على تفاصيل التشغيل اليومي للمباني والمرافق، وننظّم الأعمال التشغيلية لتحسين الاستخدام والعناية بالمكان.', features: ['الإشراف اليومي', 'تنظيم التشغيل', 'كفاءة الاستخدام'] },
+  { title: 'الصيانة والأمن', english: 'CARE & MAINTENANCE', description: 'حلول صيانة دورية وطارئة وفق العقود المعتمدة، مع متابعة أنظمة الأمن والسلامة والاشتراطات اللازمة للعقار.', features: ['صيانة دورية وطارئة', 'أنظمة الأمن والسلامة', 'متابعة الاشتراطات'] },
+  { title: 'تسويق العقارات', english: 'REAL ESTATE MARKETING', description: 'نُبرز ما يميّز عقارك ونوصله للجمهور المناسب؛ بخطط تسويقية وحملات رقمية ومحتوى يقدّم المكان كما يستحق.', features: ['الخطط التسويقية', 'الحملات الرقمية', 'إبراز مزايا العقار'] },
+  { title: 'خدمات المكاتب', english: 'PARTNER SERVICES', description: 'نساند المكاتب العقارية في بناء حضورها الرقمي، وإدارة حملاتها وحساباتها، ودعم خطوات المبيعات.', features: ['الهوية الرقمية', 'إدارة الحسابات', 'دعم المبيعات'] },
 ];
 
 export default function Services() {
-  const scrollerRef = useRef(null);
-  const pausedRef = useRef(false);
-  const resumeTimeoutRef = useRef(null);
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (reduceMotion) return;
-
-    let rafId = 0;
-    let lastTs;
-    const speedPxPerMs = 0.04;
-
-    const tick = (ts) => {
-      if (lastTs === undefined) lastTs = ts;
-      const dt = ts - lastTs;
-      lastTs = ts;
-
-      if (!pausedRef.current) {
-        el.scrollLeft += dt * speedPxPerMs;
-        const half = el.scrollWidth / 2;
-        if (half > 0 && el.scrollLeft >= half) {
-          el.scrollLeft -= half;
-        }
-      }
-
-      rafId = window.requestAnimationFrame(tick);
-    };
-
-    rafId = window.requestAnimationFrame(tick);
-
-    return () => {
-      if (resumeTimeoutRef.current) {
-        window.clearTimeout(resumeTimeoutRef.current);
-      }
-      window.cancelAnimationFrame(rafId);
-    };
-  }, []);
-
-  const pauseAutoScroll = () => {
-    pausedRef.current = true;
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current);
-    }
-  };
-
-  const scheduleResumeAutoScroll = () => {
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current);
-    }
-    resumeTimeoutRef.current = window.setTimeout(() => {
-      pausedRef.current = false;
-    }, 1400);
-  };
-
+  const [open, setOpen] = useState(0);
   return (
-    <section id="services" className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
-      {/* Decorative Elements - Antique Bronze */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#8B6A14]/20 to-transparent" />
-      <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] bg-[#8B6A14]/5 rounded-full blur-3xl pointer-events-none" />
-      
-      <div className="container-custom relative z-10">
-        <div className="text-center mb-20 max-w-3xl mx-auto">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 tracking-tight"
-          >
-            خدماتنا <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">المتكاملة</span>
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            viewport={{ once: true }}
-            className="text-gray-600 text-lg md:text-xl leading-relaxed font-light"
-          >
-            نقدم مجموعة شاملة من الخدمات العقارية والفندقية المصممة لتلبية احتياجاتك بأعلى معايير الجودة والاحترافية.
-          </motion.p>
-        </div>
-
-        <div className="md:hidden -mx-6 sm:-mx-16">
-          <div
-            ref={scrollerRef}
-            dir="ltr"
-            onPointerDown={pauseAutoScroll}
-            onPointerUp={scheduleResumeAutoScroll}
-            onPointerCancel={scheduleResumeAutoScroll}
-            onMouseEnter={pauseAutoScroll}
-            onMouseLeave={scheduleResumeAutoScroll}
-            onTouchStart={pauseAutoScroll}
-            onTouchEnd={scheduleResumeAutoScroll}
-            className="overflow-x-auto scrollbar-hide px-6 sm:px-16"
-          >
-            <div className="flex w-max gap-4 pb-2">
-              {services.concat(services).map((service, index) => (
-                <div
-                  key={`${service.title}-${index}`}
-                  dir="rtl"
-                  className="w-[88vw] max-w-sm flex-shrink-0 group bg-white rounded-2xl p-7 border border-gray-200 shadow-md hover:shadow-xl hover:border-[#8B6A14]/40 transition-all duration-500 relative flex flex-col h-full overflow-hidden ring-1 ring-black/5"
-                >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8B6A14] to-transparent group-hover:via-[#6B5210] transition-all duration-700" />
-
-                  <div className="mb-5 relative">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] rounded-2xl flex items-center justify-center group-hover:from-[#9C7C20] group-hover:to-[#7A6212] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#8B6A14]/20">
-                      <service.icon className="w-7 h-7 text-[#FAF3E0] transition-colors duration-500" strokeWidth={2.25} />
-                    </div>
-                  </div>
-
-                  <h3 className="text-2xl font-extrabold text-[#8B6A14] mb-3 group-hover:text-[#6B5210] transition-colors duration-300 tracking-tight">
-                    {service.title}
-                  </h3>
-
-                  <p className="text-gray-700 leading-relaxed mb-6 flex-grow text-[15px]">
-                    {service.description}
-                  </p>
-
-                  <div className="space-y-3 mb-6">
-                    {service.features.map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm text-gray-600 group-hover:text-gray-800 transition-colors">
-                        <CheckCircle2 className="w-4 h-4 text-[#8B6A14] flex-shrink-0" strokeWidth={2.25} />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-
-                  <a
-                    href={`https://wa.me/966570109444?text=أهلاً، أرغب في الاستفسار عن ${service.title}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-between w-full px-6 py-3.5 rounded-xl bg-gradient-to-br from-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-bold group-hover:from-[#9C7C20] group-hover:to-[#7A6212] transition-all duration-300 mt-auto shadow-md shadow-[#8B6A14]/25 text-base"
-                  >
-                    <span>{service.action}</span>
-                    <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" strokeWidth={2.25} />
-                  </a>
-                </div>
-              ))}
-            </div>
+    <section id="services" className="sf-services sf-section" aria-labelledby="sf-services-title">
+      <div className="container-custom">
+        <div className="sf-section-label"><span>03 / ما وراء المكان</span><span lang="en" dir="ltr">CARE BEYOND THE ADDRESS</span></div>
+        <div className="sf-services__grid">
+          <div className="sf-services__intro"><span className="sf-kicker">من أول خطوة، إلى كل يوم بعدها.</span><h2 id="sf-services-title">عقار يُختار بعناية.<br /><em>ويُدار باهتمام.</em></h2><p>للمالك، والمستثمر، والباحث عن بيت.<br />خبرات متكاملة حول احتياجك.</p><a href="#contact" className="sf-text-link">لنتحدث عن احتياجك <ArrowUpLeft size={19} aria-hidden="true" /></a><span className="sf-services__wordmark" aria-hidden="true">عناية.</span></div>
+          <div className="sf-services__list">
+            {services.map((service, index) => (
+              <div key={service.title} className={`sf-service ${open === index ? 'is-open' : ''}`}>
+                <h3><button id={`sf-service-trigger-${index}`} aria-expanded={open === index} aria-controls={`sf-service-panel-${index}`} onClick={() => setOpen(open === index ? null : index)}><span className="sf-service__number">0{index + 1}</span><span>{service.title}<small lang="en" dir="ltr">{service.english}</small></span>{open === index ? <Minus size={20} aria-hidden="true" /> : <Plus size={20} aria-hidden="true" />}</button></h3>
+                <div id={`sf-service-panel-${index}`} role="region" aria-labelledby={`sf-service-trigger-${index}`} hidden={open !== index} className="sf-service__body"><p>{service.description}</p><ul>{service.features.map(feature => <li key={feature}>{feature}</li>)}</ul><a href={`https://wa.me/966570109444?text=${encodeURIComponent(`مرحبًا، أرغب في الاستفسار عن ${service.title}`)}`} target="_blank" rel="noopener noreferrer">استفسر عن الخدمة <ArrowUpLeft size={17} aria-hidden="true" /></a></div>
+              </div>
+            ))}
           </div>
-        </div>
-
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="group bg-white rounded-2xl p-8 border border-[#8B6A14]/10 shadow-sm hover:shadow-xl hover:border-[#8B6A14]/35 transition-all duration-500 relative flex flex-col h-full overflow-hidden"
-            >
-              {/* Top Accent Line - Antique Bronze */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8B6A14] to-transparent group-hover:via-[#6B5210] transition-all duration-700" />
-              
-              <div className="mb-6 relative">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] rounded-2xl flex items-center justify-center group-hover:from-[#9C7C20] group-hover:to-[#7A6212] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#8B6A14]/18 ring-1 ring-[#8B6A14]/10">
-                  <service.icon className="w-7 h-7 text-[#FAF3E0] transition-colors duration-500" strokeWidth={2.25} />
-                </div>
-              </div>
-
-              <h3 className="text-2xl font-extrabold text-[#8B6A14] mb-4 group-hover:text-[#6B5210] transition-colors duration-300 tracking-tight">
-                {service.title}
-              </h3>
-              
-              <p className="text-gray-600 leading-relaxed mb-8 flex-grow">
-                {service.description}
-              </p>
-
-              <div className="space-y-4 mb-8">
-                {service.features.map((feature, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
-                    <CheckCircle2 className="w-4 h-4 text-[#8B6A14]" strokeWidth={2.25} />
-                    {feature}
-                  </div>
-                ))}
-              </div>
-
-              <a 
-                    href={`https://wa.me/966570109444?text=أهلاً، أرغب في الاستفسار عن ${service.title}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                className="inline-flex items-center justify-between w-full px-6 py-3 rounded-xl bg-gradient-to-br from-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-semibold group-hover:from-[#9C7C20] group-hover:to-[#7A6212] transition-all duration-300 mt-auto shadow-md shadow-[#8B6A14]/18 ring-1 ring-[#8B6A14]/10 hover:ring-[#8B6A14]/30"
-              >
-                <span>{service.action}</span>
-                <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" strokeWidth={2.25} />
-              </a>
-            </motion.div>
-          ))}
         </div>
       </div>
     </section>

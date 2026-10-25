@@ -1,777 +1,231 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, ArrowLeft, CheckCircle2, BedDouble, Bath, Home, ArrowUpRight, Eye, MapPin, X, CalendarCheck, Search, Filter, Tag, ArrowDown, Star, ChevronDown } from 'lucide-react';
+
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ArrowDown, ArrowLeft, ArrowUpLeft, Heart, SlidersHorizontal, Search, X, Maximize2, MapPin, Scale, LayoutGrid, Building2, Share2, Clock, ChevronDown, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { areaLabel, filterUnits, formatNumber, kindLabels, mapUnit, priceLabel, safeExternalUrl, statusLabels, unitContactUrl } from '@/lib/unitCatalog.mjs';
+import { cleanRecentIds, rememberUnit, readSharedSelection, unitShareUrl, saudiToday, viewingRequestUrl } from '@/lib/unitExperience.mjs';
+import { projectMapUrl } from '@/lib/projectMap.mjs';
+import './UnitModels.css';
+
+const FAVORITES_KEY = 'safwa-unit-favorites-v1';
+const RECENT_KEY = 'safwa-recent-units-v1';
+const initialFilters = { search: '', project: 'all', kind: 'all', available: false, favoritesOnly: false, sort: 'latest' };
 
 export default function UnitModels() {
   const [units, setUnits] = useState([]);
-  const [selectedUnit, setSelectedUnit] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProject, setSelectedProject] = useState('الكل');
-  const [selectedType, setSelectedType] = useState('الكل');
-  const [selectedPriceRange, setSelectedPriceRange] = useState('الكل');
-  const [isTypeOpen, setIsTypeOpen] = useState(false);
-  const [isPriceOpen, setIsPriceOpen] = useState(false);
-  const [isProjectOpen, setIsProjectOpen] = useState(false);
-  const visibleCountRef = useState(8);
-  const [visibleCount, setVisibleCount] = visibleCountRef;
-  const scrollerRef = useRef(null);
-  const pausedRef = useRef(false);
-  const resumeTimeoutRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [filters, setFilters] = useState(initialFilters);
+  const [favorites, setFavorites] = useState([]);
+  const [comparison, setComparison] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [modal, setModal] = useState(null);
+  const [notice, setNotice] = useState('');
+  const [storageReady, setStorageReady] = useState(false);
+  const [recentIds, setRecentIds] = useState([]);
+  const sharedRequest = useRef('');
 
   useEffect(() => {
-    const fetchUnits = async () => {
-      const { data } = await supabase
-        .from('units')
-        .select(`
-          id, unit_number, type, size, price, status, main_image, model_details, model_count,
-          projects ( name, location, link )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        const mapped = data.map((u) => ({
-          id: u.id,
-          title: u.unit_number || 'نموذج سكني',
-          type: u.type || 'وحدة سكنية',
-          area: u.size || '-',
-          price: u.price ? Number(u.price).toLocaleString() : '-',
-          image: u.main_image || '/images/4.png',
-          status: u.status === 'available' ? 'متاح' : u.status === 'reserved' ? 'محجوزة' : 'مباعة',
-          details: u.model_details || '',
-          count: u.model_count ?? null,
-          projectName: u.projects?.name || 'مشروع مساكن',
-          location: u.projects?.location || null,
-          locationLink: u.projects?.link || null
-        }));
-        setUnits(mapped);
-      }
-    };
-
-    fetchUnits();
+    try {
+      const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+      if (Array.isArray(saved)) setFavorites([...new Set(saved.filter(id => typeof id === 'string'))]);
+    } catch { /* Favorites remain usable when local storage is unavailable. */ }
+    try { setRecentIds(cleanRecentIds(JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'))); } catch {}
+    setStorageReady(true);
   }, []);
-
-  const projects = ['الكل', ...new Set(units.map(u => u.projectName).filter(Boolean))];
-  const unitTypes = ['الكل', ...Array.from(new Set(units.map(u => u.type).filter(Boolean)))];
-  const PRICE_RANGES = [
-    { label: 'الكل', min: 0, max: Infinity },
-    { label: 'أقل من 500 ألف', min: 0, max: 500_000 },
-    { label: '500 ألف - 800 ألف', min: 500_000, max: 800_000 },
-    { label: '800 ألف - 1.2 مليون', min: 800_000, max: 1_200_000 },
-    { label: '1.2 مليون - 1.8 مليون', min: 1_200_000, max: 1_800_000 },
-    { label: '1.8 مليون فما فوق', min: 1_800_000, max: Infinity },
-  ];
-
-  const getRange = () => PRICE_RANGES.find(r => r.label === selectedPriceRange) ?? PRICE_RANGES[0];
-
-  const filteredUnits = units.filter(unit => {
-    const matchesProject = selectedProject === 'الكل' || unit.projectName === selectedProject;
-    const matchesType = selectedType === 'الكل' || unit.type === selectedType;
-    const matchesPrice = (() => {
-      if (selectedPriceRange === 'الكل') return true;
-      const range = getRange();
-      const numericPrice = unit.price ? Number(String(unit.price).replace(/,/g, '')) : null;
-      if (numericPrice === null || Number.isNaN(numericPrice)) return false;
-      return numericPrice >= range.min && numericPrice < range.max;
-    })();
-
-    if (!matchesProject || !matchesType || !matchesPrice) return false;
-
-    if (!searchTerm) return true;
-
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      unit.title?.toLowerCase().includes(searchLower) ||
-      unit.details?.toLowerCase().includes(searchLower) ||
-      unit.price?.toString().replace(/,/g, '').includes(searchLower) ||
-      unit.projectName?.toLowerCase().includes(searchLower) ||
-      unit.location?.toLowerCase().includes(searchLower) ||
-      unit.type?.toLowerCase().includes(searchLower) ||
-      unit.area?.toString().includes(searchLower)
-    );
-  });
-
-  const availableCount = filteredUnits.filter((u) => u.status === 'متاح').length;
-  const showLoadMore = filteredUnits.length > visibleCount;
-  const mobileUnits = filteredUnits.slice(0, visibleCount);
-  const mobileCards = mobileUnits.map((unit) => ({ type: 'unit', unit }));
-  if (showLoadMore) mobileCards.push({ type: 'loadMore' });
-  const loopCards = mobileCards.concat(mobileCards);
+  useEffect(() => {
+    if (storageReady) { try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); } catch {} }
+  }, [favorites, storageReady]);
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    if (mobileCards.length < 2) return;
-
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (reduceMotion) return;
-
-    const isMdUp = window.matchMedia?.('(min-width: 768px)')?.matches;
-    if (isMdUp) return;
-
-    let rafId = 0;
-    let lastTs;
-    const speedPxPerMs = 0.04;
-
-    const tick = (ts) => {
-      if (lastTs === undefined) lastTs = ts;
-      const dt = ts - lastTs;
-      lastTs = ts;
-
-      if (!pausedRef.current) {
-        el.scrollLeft += dt * speedPxPerMs;
-        const half = el.scrollWidth / 2;
-        if (half > 0 && el.scrollLeft >= half) {
-          el.scrollLeft -= half;
-        }
-      }
-
-      rafId = window.requestAnimationFrame(tick);
-    };
-
-    rafId = window.requestAnimationFrame(tick);
-
-    return () => {
-      if (resumeTimeoutRef.current) {
-        window.clearTimeout(resumeTimeoutRef.current);
-      }
-      window.cancelAnimationFrame(rafId);
-    };
-  }, [mobileCards.length, selectedProject, searchTerm, visibleCount]);
+    let active = true;
+    async function load() {
+      setLoading(true);
+      setError(false);
+      try {
+        const { data, error: fetchError } = await supabase.from('units').select('id, project_id, unit_number, type, size, price, status, main_image, model_details, model_count, projects (name, location, link)').order('created_at', { ascending: false });
+        if (fetchError) throw fetchError;
+        if (active) setUnits((data || []).map(mapUnit));
+      } catch { if (active) setError(true); }
+      finally { if (active) setLoading(false); }
+    }
+    load();
+    return () => { active = false; };
+  }, [attempt]);
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollLeft = 0;
-    pausedRef.current = false;
-  }, [selectedProject, searchTerm, visibleCount, filteredUnits.length]);
+    if (storageReady) { try { localStorage.setItem(RECENT_KEY, JSON.stringify(recentIds)); } catch {} }
+  }, [recentIds, storageReady]);
 
-  const pauseAutoScroll = () => {
-    pausedRef.current = true;
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current);
+  useEffect(() => {
+    if (loading || error) return;
+    const applySharedLink = () => {
+      const search = window.location.search;
+      if (sharedRequest.current === search) return;
+      sharedRequest.current = search;
+      const selection = readSharedSelection(search);
+      if (!selection) return;
+      const matched = selection.ids.map(id => units.find(unit => unit.id === id)).filter(Boolean);
+      if (!matched.length) { setNotice('النماذج في هذا الرابط غير متاحة حاليًا. يمكنك استعراض المجموعة.'); return; }
+      if (selection.type === 'compare' && matched.length > 1) {
+        setComparison(matched.map(unit => unit.id));
+        setModal({ type: 'compare' });
+      } else {
+        setRecentIds(previous => rememberUnit(previous, matched[0].id));
+        setModal({ type: 'details', unit: matched[0] });
+      }
+      if (matched.length < selection.ids.length) setNotice('بعض النماذج في الرابط لم تعد متاحة؛ نعرض النماذج الموجودة.');
+    };
+    applySharedLink();
+    window.addEventListener('popstate', applySharedLink);
+    return () => window.removeEventListener('popstate', applySharedLink);
+  }, [loading, error, units]);
+
+  const openUnit = unit => {
+    setRecentIds(previous => rememberUnit(previous, unit.id));
+    setModal({ type: 'details', unit });
+  };
+  const closeModal = () => {
+    setModal(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('unit') || url.searchParams.has('compare')) {
+      url.searchParams.delete('unit'); url.searchParams.delete('compare');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+      sharedRequest.current = url.search;
     }
   };
+  const recentUnits = recentIds.map(id => units.find(unit => unit.id === id)).filter(Boolean);
 
-  const scheduleResumeAutoScroll = () => {
-    if (resumeTimeoutRef.current) {
-      window.clearTimeout(resumeTimeoutRef.current);
-    }
-    resumeTimeoutRef.current = window.setTimeout(() => {
-      pausedRef.current = false;
-    }, 1400);
+  const updateFilter = (key, value) => { setFilters(previous => ({ ...previous, [key]: value })); setVisibleCount(6); };
+  const reset = () => { setFilters(initialFilters); setVisibleCount(6); };
+  const filtered = filterUnits(units, { ...filters, favorites });
+  const compared = comparison.map(id => units.find(unit => unit.id === id)).filter(Boolean);
+  const favoriteCount = units.filter(unit => favorites.includes(unit.id)).length;
+  const projects = [...new Map(units.filter(unit => unit.projectId).map(unit => [unit.projectId, unit.projectName])).entries()];
+  const kinds = [...new Set(units.map(unit => unit.kind))];
+  const hasFilters = filters.search || filters.project !== 'all' || filters.kind !== 'all' || filters.available || filters.favoritesOnly;
+  const toggleFavorite = unit => {
+    const exists = favorites.includes(unit.id);
+    setFavorites(previous => exists ? previous.filter(id => id !== unit.id) : [...previous, unit.id]);
+    setNotice(exists ? `أُزيل ${unit.title} من المفضلة` : `حُفظ ${unit.title} في المفضلة على هذا المتصفح`);
+  };
+  const toggleComparison = unit => {
+    if (comparison.includes(unit.id)) { setComparison(previous => previous.filter(id => id !== unit.id)); setNotice(`أُزيل ${unit.title} من المقارنة`); }
+    else if (comparison.length < 3) { setComparison(previous => [...previous, unit.id]); setNotice(`أُضيف ${unit.title} للمقارنة`); }
+    else setNotice('يمكنك مقارنة ثلاثة نماذج. أزل أحدها لإضافة نموذج آخر.');
   };
 
   return (
-    <section className="py-20 md:py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden dir-rtl [font-family:var(--font-cairo)]">
-      {/* Background Elements - Antique Bronze */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-[#8B6A14]/[0.03] -skew-x-12 translate-x-1/3 pointer-events-none" />
-      
-      <div className="container-custom relative z-10">
-        <div className="mb-8 md:mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="flex flex-col md:flex-row md:items-end md:justify-between gap-5"
-          >
-            <div className="flex items-end gap-3 md:gap-4">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
-                  نماذج <span className="text-transparent bg-clip-text bg-gradient-to-l from-[#B8953E] via-[#8B6A14] to-[#6B5210]">الوحدات السكنية</span>
-                </h2>
-                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500 font-medium flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8B6A14]/8 text-[#6B5210] ring-1 ring-[#8B6A14]/12 font-extrabold">
-                    <Tag size={14} strokeWidth={2.25} />
-                    <span>{filteredUnits.length}</span>
-                    <span>نموذج متاح للتصفح</span>
-                  </span>
-                  <span className="hidden sm:inline text-gray-300">|</span>
-                  <span className="hidden sm:inline-flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="font-bold text-gray-700">{availableCount}</span>
-                    <span>متاح الآن للحجز</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Single Compact Search Card */}
-            <div className="relative w-full md:max-w-none lg:w-full xl:max-w-none">
-              <div className="relative bg-white rounded-[22px] md:rounded-2xl border border-gray-100 shadow-[0_8px_30px_-12px_rgba(74,56,10,0.12)] ring-1 ring-black/[0.02] p-3 md:p-3.5 lg:p-4 z-[1]">
-                <div className="flex flex-col lg:flex-row gap-2.5 md:gap-3 lg:gap-2.5 items-stretch">
-                  {/* Search text input */}
-                  <div className="relative flex-1 min-w-0 lg:min-w-[300px] order-1">
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8B6A14]/60 pointer-events-none flex items-center justify-center">
-                      <Search size={18} className="md:w-[19px] md:h-[19px]" strokeWidth={2.25} />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="ابحث باسم الوحدة، المشروع، المساحة أو السعر..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full py-3 md:py-3.5 pr-11 md:pr-12 pl-3 md:pl-4 bg-gray-50 hover:bg-white rounded-2xl border border-gray-200 focus:border-[#8B6A14] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#8B6A14]/8 transition-all duration-200 text-sm md:text-[15px] text-gray-700 placeholder:text-[12px] md:placeholder:text-sm placeholder:text-gray-400"
-                    />
-                  </div>
-
-                  {/* Project Filter Dropdown */}
-                  <DropdownSelect
-                    label="المشروع"
-                    value={selectedProject}
-                    options={projects}
-                    isOpen={isProjectOpen}
-                    onToggle={() => { setIsProjectOpen(v => !v); setIsTypeOpen(false); setIsPriceOpen(false); }}
-                    onClose={() => setIsProjectOpen(false)}
-                    onSelect={(opt) => { setSelectedProject(opt); setIsProjectOpen(false); setVisibleCount(8); }}
-                    icon={<Home size={16} strokeWidth={2.25} />}
-                    className="order-3 md:order-2 md:w-[165px]"
-                  />
-
-                  {/* Type Filter Dropdown */}
-                  <DropdownSelect
-                    label="نوع الوحدة"
-                    value={selectedType}
-                    options={unitTypes}
-                    isOpen={isTypeOpen}
-                    onToggle={() => { setIsTypeOpen(v => !v); setIsProjectOpen(false); setIsPriceOpen(false); }}
-                    onClose={() => setIsTypeOpen(false)}
-                    onSelect={(opt) => { setSelectedType(opt); setIsTypeOpen(false); setVisibleCount(8); }}
-                    icon={<Home size={16} strokeWidth={2.25} />}
-                    className="order-2 md:order-3 md:w-[155px]"
-                  />
-
-                  {/* Price Filter Dropdown */}
-                  <DropdownSelect
-                    label="نطاق السعر"
-                    value={selectedPriceRange}
-                    options={PRICE_RANGES.map(r => r.label)}
-                    isOpen={isPriceOpen}
-                    onToggle={() => { setIsPriceOpen(v => !v); setIsProjectOpen(false); setIsTypeOpen(false); }}
-                    onClose={() => setIsPriceOpen(false)}
-                    onSelect={(opt) => { setSelectedPriceRange(opt); setIsPriceOpen(false); setVisibleCount(8); }}
-                    icon={<Filter size={16} strokeWidth={2.25} />}
-                    className="order-4 md:w-[185px]"
-                  />
-
-                  {/* Reset Filters */}
-                  {(searchTerm || selectedProject !== 'الكل' || selectedType !== 'الكل' || selectedPriceRange !== 'الكل') && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSelectedProject('الكل');
-                        setSelectedType('الكل');
-                        setSelectedPriceRange('الكل');
-                        setVisibleCount(8);
-                      }}
-                      className="order-5 flex items-center justify-center gap-1.5 px-3.5 py-2.5 md:py-3 rounded-2xl border border-gray-200 text-[12px] md:text-sm font-extrabold text-gray-600 hover:text-[#6B5210] hover:border-[#8B6A14]/35 hover:bg-[#8B6A14]/5 transition-all tracking-wide"
-                    >
-                      <X size={15} strokeWidth={2.5} />
-                      <span className="hidden sm:inline">إعادة</span>
-                      <span className="sm:hidden">مسح</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-          </motion.div>
+    <section id="unit-models" className="uc-catalog sf-section" aria-labelledby="uc-title">
+      <div className="container-custom">
+        <div className="sf-section-label"><span>مجموعة صفوة / نماذج السكن</span><span lang="en" dir="ltr">THE RESIDENCE COLLECTION</span></div>
+        <div className="uc-heading">
+          <div><span className="sf-kicker"><span className="uc-tiny-square" aria-hidden="true" /> كل تفصيل، أقرب لاختيارك.</span><h2 id="uc-title">مساحتك القادمة.<br /><em>تأمّلها على مهل.</em></h2></div>
+          <div className="uc-heading__aside"><p>تصفّح المخططات، احتفظ بما يعجبك،<br />وقارن التفاصيل التي تصنع فرقًا.</p><span><LayoutGrid size={14} aria-hidden="true" />{loading ? 'جارٍ تحميل المجموعة' : `${formatNumber(units.length)} نموذجًا للاكتشاف`}</span></div>
         </div>
 
-        <div className="md:hidden -mx-6 sm:-mx-16">
-          {filteredUnits.length > 0 ? (
-            <div
-              ref={scrollerRef}
-              dir="ltr"
-              onPointerDown={pauseAutoScroll}
-              onPointerUp={scheduleResumeAutoScroll}
-              onPointerCancel={scheduleResumeAutoScroll}
-              onMouseEnter={pauseAutoScroll}
-              onMouseLeave={scheduleResumeAutoScroll}
-              onTouchStart={pauseAutoScroll}
-              onTouchEnd={scheduleResumeAutoScroll}
-              className="overflow-x-auto scrollbar-hide px-6 sm:px-16"
-            >
-              <div className="flex w-max gap-4 pb-2">
-                {loopCards.map((card, index) => (
-                  <div key={`${card.type}-${card.unit?.id ?? 'more'}-${index}`} dir="rtl" className="w-[82vw] max-w-sm flex-shrink-0">
-                    {card.type === 'unit' ? (
-                      <UnitCard
-                        unit={card.unit}
-                        index={index}
-                        onPreview={() => setSelectedUnit(card.unit)}
-                        onImageClick={() => setPreviewImage(card.unit.image)}
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setVisibleCount((prev) => prev + 4)}
-                        className="w-full h-full min-h-[340px] sm:min-h-[380px] bg-white rounded-2xl border border-dashed border-gray-300 hover:border-[#8B6A14]/50 hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center gap-3 text-[#8B6A14]"
-                      >
-                        <div className="w-12 h-12 rounded-2xl bg-[#8B6A14]/10 text-[#8B6A14] flex items-center justify-center ring-1 ring-[#8B6A14]/10">
-                          <ArrowDown className="w-5 h-5" strokeWidth={2.25} />
-                        </div>
-                        <div className="text-sm font-extrabold tracking-tight">عرض المزيد من النماذج</div>
-                        <div className="text-xs text-gray-500">اسحب للوصول ثم اضغط</div>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 px-6 sm:px-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <Search className="text-gray-400" size={32} strokeWidth={2.25} />
-              </div>
-              <h3 className="text-xl font-extrabold text-gray-700 mb-2 tracking-tight">لا توجد نتائج مطابقة</h3>
-              <p className="text-gray-500">جرب البحث بكلمات مختلفة أو تغيير الفلتر</p>
-              <button
-                onClick={() => { setSearchTerm(''); setSelectedProject('الكل'); }}
-                className="mt-4 text-[#8B6A14] hover:underline font-semibold"
-              >
-                إعادة تعيين البحث
-              </button>
-            </div>
-          )}
+        <div className="uc-toolbar">
+          <label className="uc-search"><Search size={19} aria-hidden="true" /><span className="sr-only">ابحث في نماذج الوحدات</span><input type="search" placeholder="اسم النموذج، الحي، أو المساحة…" value={filters.search} onChange={event => updateFilter('search', event.target.value)} />{filters.search && <button type="button" aria-label="مسح البحث" onClick={() => updateFilter('search', '')}><X size={17} /></button>}</label>
+          <label className="uc-select"><span>المشروع</span><select value={filters.project} onChange={event => updateFilter('project', event.target.value)}><option value="all">جميع المشاريع</option>{projects.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+          <label className="uc-select"><span>الترتيب</span><select value={filters.sort} onChange={event => updateFilter('sort', event.target.value)}><option value="latest">الأحدث أولًا</option><option value="area-asc">المساحة: من الأصغر</option><option value="area-desc">المساحة: من الأكبر</option><option value="price-asc">السعر: من الأقل</option><option value="price-desc">السعر: من الأعلى</option></select></label>
         </div>
+        <div className="uc-filter-row">
+          <div className="uc-kinds" role="group" aria-label="نوع الوحدة"><button aria-pressed={filters.kind === 'all'} onClick={() => updateFilter('kind', 'all')}>كل المساحات</button>{kinds.map(kind => <button key={kind} aria-pressed={filters.kind === kind} onClick={() => updateFilter('kind', kind)}>{kindLabels[kind]}</button>)}</div>
+          <div className="uc-filter-options"><label><input type="checkbox" checked={filters.available} onChange={event => updateFilter('available', event.target.checked)} />المتاح فقط</label><button className="uc-favorites-filter" aria-pressed={filters.favoritesOnly} onClick={() => updateFilter('favoritesOnly', !filters.favoritesOnly)}><Heart size={15} fill={filters.favoritesOnly ? 'currentColor' : 'none'} aria-hidden="true" />المفضلة <span>{formatNumber(favoriteCount)}</span></button></div>
+        </div>
+        <div className="uc-results-line"><span role="status">{loading ? 'نجهّز لك التفاصيل…' : `${formatNumber(filtered.length)} نموذجًا${hasFilters ? ' يطابق اختيارك' : ' في المجموعة'}`}</span>{hasFilters ? <button onClick={reset}>مسح الفلاتر <X size={13} aria-hidden="true" /></button> : <span className="uc-results-hint"><Scale size={14} aria-hidden="true" /> أضف حتى ٣ نماذج للمقارنة</span>}</div>
+        <p className="uc-session-notice" role="status">{notice}</p>{recentUnits.length > 0 && <div className="uc-recent"><span><Clock size={14} aria-hidden="true" /> شاهدتها مؤخرًا <small>على هذا المتصفح</small></span><div>{recentUnits.map(unit => <button key={unit.id} onClick={() => openUnit(unit)}>{unit.title}<ArrowUpLeft size={12} aria-hidden="true" /></button>)}</div><button aria-label="مسح سجل المشاهدات على هذا المتصفح" onClick={() => { setRecentIds([]); setNotice("مُسح سجل المشاهدات من هذا المتصفح"); }}><X size={15} /></button></div>}
 
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredUnits.length > 0 ? (
-            <>
-              {filteredUnits.slice(0, visibleCount).map((unit, index) => (
-                <UnitCard 
-                  key={unit.id} 
-                  unit={unit} 
-                  index={index} 
-                  onPreview={() => setSelectedUnit(unit)}
-                  onImageClick={() => setPreviewImage(unit.image)}
-                />
-              ))}
-            </>
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                <Search className="text-gray-400" size={32} strokeWidth={2.25} />
-              </div>
-              <h3 className="text-xl font-extrabold text-gray-700 mb-2 tracking-tight">لا توجد نتائج مطابقة</h3>
-              <p className="text-gray-500">جرب البحث بكلمات مختلفة أو تغيير الفلتر</p>
-              <button 
-                onClick={() => { setSearchTerm(''); setSelectedProject('الكل'); }}
-                className="mt-4 text-[#8B6A14] hover:underline font-semibold"
-              >
-                إعادة تعيين البحث
-              </button>
-            </div>
-          )}
-        </div>
-        
-        {filteredUnits.length > visibleCount && (
-          <div className="hidden md:block mt-12 text-center">
-            <button
-              onClick={() => setVisibleCount(prev => prev + 4)}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] transition-all duration-300 shadow-sm hover:shadow-md group font-semibold tracking-wide"
-            >
-              <span>عرض المزيد من النماذج</span>
-              <ArrowDown className="w-4 h-4 group-hover:translate-y-1 transition-transform" strokeWidth={2.25} />
-            </button>
-          </div>
-        )}
-
-        <div className="mt-16 text-center">
-            <a 
-              href="#contact" 
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] rounded-2xl hover:from-[#9C7C20] hover:to-[#7A6212] hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-[#8B6A14]/25 font-semibold tracking-wide ring-1 ring-[#8B6A14]/20"
-            >
-                <span>تواصل معنا للمزيد</span>
-                <ArrowLeft className="w-4 h-4" strokeWidth={2.25} />
-            </a>
-        </div>
+        {loading ? <div className="uc-grid" aria-busy="true" aria-label="تحميل النماذج">{[0, 1, 2].map(index => <div className="uc-skeleton" key={index}><div /><span /><span /></div>)}</div> : error ? <div className="uc-empty" role="alert"><Building2 size={36} strokeWidth={1} /><h3>تعذّر تحميل المجموعة</h3><p>أعد المحاولة للاطّلاع على النماذج وبياناتها.</p><button className="uc-button" onClick={() => setAttempt(value => value + 1)}>إعادة المحاولة <ArrowLeft size={17} /></button></div> : filtered.length === 0 ? <div className="uc-empty"><SlidersHorizontal size={36} strokeWidth={1} /><h3>{filters.favoritesOnly ? 'امنح اختياراتك مكانًا هنا.' : 'نوسّع دائرة الاختيار؟'}</h3><p>{filters.favoritesOnly ? 'اضغط القلب على أي نموذج لحفظه، أو غيّر الفلاتر لرؤية اختياراتك.' : 'جرّب مشروعًا آخر أو عدّل البحث لتكتشف المزيد.'}</p><button className="uc-button" onClick={reset}>استعرض كل النماذج <ArrowLeft size={17} /></button></div> : <>
+          <div className="uc-grid">{filtered.slice(0, visibleCount).map((unit, index) => <UnitCard key={unit.id} unit={unit} index={index} favorite={favorites.includes(unit.id)} compared={comparison.includes(unit.id)} comparisonFull={comparison.length >= 3} onFavorite={() => toggleFavorite(unit)} onCompare={() => toggleComparison(unit)} onDetails={() => openUnit(unit)} />)}</div>
+          <div className="uc-grid-footer"><span>عرض {formatNumber(Math.min(visibleCount, filtered.length))} من {formatNumber(filtered.length)} نموذجًا</span>{visibleCount < filtered.length && <button className="uc-load-more" onClick={() => setVisibleCount(value => value + 6)}>اكتشف المزيد من المساحات <ArrowDown size={17} aria-hidden="true" /></button>}<a href="#contact">نساعدك في الاختيار <ArrowUpLeft size={17} aria-hidden="true" /></a></div>
+        </>}
+        <details className="uc-help"><summary>قبل ما تختار <span>٣ إجابات سريعة</span><ChevronDown size={16} aria-hidden="true" /></summary><div><h3>كيف أرتّب معاينة؟</h3><p>افتح تفاصيل النموذج واختر «طلب معاينة»، ثم حدّد اليوم والفترة المفضّلة. يراجع الفريق طلبك ويؤكد الموعد معك.</p><h3>هل السعر والتوفر نهائيان؟</h3><p>نعرض البيانات المسجّلة للنموذج؛ يؤكد فريقنا السعر والتوفر والمواصفات عند التواصل.</p><h3>هل أحتاج حسابًا لحفظ اختياراتي؟</h3><p>لا. المفضلة وآخر المشاهدات تُحفظ في هذا المتصفح. ولعرض اختياراتك على جهاز آخر، شارك رابط النموذج أو المقارنة.</p></div></details>
+        <p className="uc-data-note">المساحات والأسعار والتوفر بحسب البيانات المسجّلة. يؤكد فريقنا التفاصيل النهائية عند التواصل.</p>
       </div>
 
-      {/* Unit Details Modal */}
-      <AnimatePresence>
-        {selectedUnit && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSelectedUnit(null)}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl overflow-hidden max-w-4xl w-full shadow-2xl relative flex flex-col md:flex-row max-h-[90vh] [font-family:var(--font-cairo)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button 
-                onClick={() => setSelectedUnit(null)}
-                className="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur rounded-xl hover:bg-red-50 hover:text-red-500 transition-colors"
-              >
-                <X size={20} strokeWidth={2.25} />
-              </button>
+      {compared.length > 0 && <div className="uc-compare-dock"><div className="uc-compare-dock__intro"><Scale size={22} aria-hidden="true" /><span>اختياراتك أقرب<small>{formatNumber(compared.length)} من ٣ نماذج للمقارنة</small></span></div><div className="uc-compare-dock__items">{compared.map(unit => <button key={unit.id} onClick={() => toggleComparison(unit)} aria-label={`إزالة ${unit.title} من المقارنة`}><span>{unit.title}</span><X size={13} aria-hidden="true" /></button>)}</div><button className="uc-button" disabled={compared.length < 2} onClick={() => setModal({ type: 'compare' })}>قارن الآن <ArrowLeft size={17} aria-hidden="true" /></button><button className="uc-compare-dock__clear" aria-label="مسح المقارنة" onClick={() => { setComparison([]); setNotice('مُسحت المقارنة'); }}><X size={18} /></button></div>}
 
-              {/* Image Section */}
-              <div className="md:w-1/2 relative h-64 md:h-auto bg-gray-100 cursor-pointer group" onClick={() => setPreviewImage(selectedUnit.image)}>
-                <img 
-                  src={selectedUnit.image} 
-                  alt={selectedUnit.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <Maximize2 className="text-white drop-shadow-md" size={32} strokeWidth={2.25} />
-                </div>
-                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-xl text-sm font-extrabold text-[#8B6A14] shadow-sm ring-1 ring-[#8B6A14]/10">
-                  {selectedUnit.projectName}
-                </div>
-              </div>
-
-              {/* Details Section */}
-              <div className="md:w-1/2 p-8 overflow-y-auto">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-3 py-1 rounded-2xl text-xs font-extrabold ${selectedUnit.status === 'متاح' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {selectedUnit.status}
-                  </span>
-                  <span className="text-gray-400 text-sm">#{selectedUnit.type}</span>
-                </div>
-
-                <h3 className="text-3xl font-extrabold text-gray-900 mb-4 tracking-tight">{selectedUnit.title}</h3>
-                
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 p-4 rounded-2xl ring-1 ring-black/5">
-                    <span className="block text-gray-400 text-xs mb-1">المساحة</span>
-                    <div className="flex items-center gap-2 text-gray-900 font-extrabold tracking-tight">
-                      <Maximize2 size={18} className="text-[#8B6A14]" strokeWidth={2.25} />
-                      <span>{selectedUnit.area} م²</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-2xl ring-1 ring-black/5">
-                    <span className="block text-gray-400 text-xs mb-1">السعر التقريبي</span>
-                    <div className="flex items-center gap-2 text-gray-900 font-extrabold tracking-tight">
-                      <span className="text-lg">{selectedUnit.price}</span>
-                      <span className="text-xs font-normal text-gray-500">ر.س</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <h4 className="font-extrabold text-gray-800 mb-2 tracking-tight">التفاصيل</h4>
-                  <p className="text-gray-600 leading-relaxed">
-                    {selectedUnit.details || 'يتميز هذا النموذج بتصميم عصري فريد يجمع بين الفخامة والعملية، مع استغلال أمثل للمساحات لتوفير الراحة القصوى للسكان.'}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 mt-auto">
-                  {(selectedUnit.locationLink || selectedUnit.location) && (
-                    <a 
-                      href={selectedUnit.locationLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedUnit.location)}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="w-full py-3 rounded-2xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] transition-colors flex items-center justify-center gap-2"
-                    >
-                      <MapPin size={18} className="text-[#8B6A14]" strokeWidth={2.25} />
-                      موقع المشروع على الخريطة
-                    </a>
-                  )}
-                  
-                  <a 
-                      href={buildUnitWhatsAppUrl(selectedUnit, 'حجز')}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    className="w-full py-3 rounded-2xl bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-extrabold tracking-wide hover:from-[#9C7C20] hover:to-[#7A6212] transition-all shadow-lg shadow-[#8B6A14]/25 flex items-center justify-center gap-2 ring-1 ring-[#8B6A14]/20"
-                  >
-                    <CalendarCheck size={18} strokeWidth={2.25} />
-                    احجز وحدتك الآن
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Image Lightbox */}
-      <AnimatePresence>
-        {previewImage && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4"
-            onClick={() => setPreviewImage(null)}
-          >
-            <button 
-              className="absolute top-6 left-6 text-white/70 hover:text-white transition-colors"
-              onClick={() => setPreviewImage(null)}
-            >
-              <X size={32} strokeWidth={2.25} />
-            </button>
-            <motion.img 
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              src={previewImage} 
-              alt="Preview" 
-              className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {modal?.type === 'details' && <CatalogDialog title={modal.unit.title} onClose={closeModal} className="uc-detail-dialog"><UnitDetails unit={modal.unit} favorite={favorites.includes(modal.unit.id)} onFavorite={() => toggleFavorite(modal.unit)} /></CatalogDialog>}
+      {modal?.type === 'compare' && <CatalogDialog title="التفاصيل جنبًا إلى جنب" onClose={closeModal} className="uc-comparison-dialog"><div className="uc-comparison-heading"><span className="sf-kicker">اختيار أوضح، بكل التفاصيل.</span><h2>التفاصيل جنبًا إلى جنب</h2><p>قارن ما يهمك، ثم تواصل لترتيب معاينة.</p><ShareSelection ids={compared.map(unit => unit.id)} comparison /></div><div className="uc-comparison-scroll"><table><caption className="sr-only">مقارنة النماذج السكنية المختارة</caption><thead><tr><th scope="col">التفاصيل</th>{compared.map(unit => <th scope="col" key={unit.id}><UnitImage unit={unit} /><strong>{unit.title}</strong><small>{unit.projectName}</small></th>)}</tr></thead><tbody>{[
+        ['النوع', unit => unit.type], ['المساحة', areaLabel], ['السعر', priceLabel], ['الحالة', unit => statusLabels[unit.status] || 'عند التواصل'], ['الموقع', unit => unit.location || 'غير محدد'], ['العدد المسجّل', unit => unit.count === null ? 'غير محدد' : formatNumber(unit.count)], ['التفاصيل', unit => unit.details || 'تتوفر عند التواصل'],
+      ].map(([label, value]) => <tr key={label}><th scope="row">{label}</th>{compared.map(unit => <td key={unit.id}>{value(unit)}</td>)}</tr>)}<tr><th scope="row">الخطوة التالية</th>{compared.map(unit => <td key={unit.id}><a className="uc-text-link" href={unitContactUrl(unit)} target="_blank" rel="noopener noreferrer">استفسر عن النموذج <ArrowUpLeft size={15} aria-hidden="true" /></a></td>)}</tr></tbody></table></div></CatalogDialog>}
     </section>
   );
 }
 
-function getUnitSocialProof(unit) {
-  const seed = String(unit?.id ?? unit?.title ?? 'unit');
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) % 1000000;
-  }
-  const rating = Math.round((4.2 + (hash % 70) / 100) * 10) / 10;
-  const reviews = 18 + (hash % 320);
-  return { rating, reviews };
+function UnitImage({ unit }) {
+  const [failed, setFailed] = useState(false);
+  return unit.image && !failed ? <img src={unit.image} alt={`مخطط أو صورة ${unit.title}`} loading="lazy" onError={() => setFailed(true)} /> : <div className="uc-image-placeholder"><Building2 size={38} strokeWidth={1} aria-hidden="true" /><span>صور النموذج عند التواصل</span></div>;
 }
 
-function buildUnitWhatsAppUrl(unit, intent) {
-  const title = unit?.title || 'وحدة';
-  const projectName = unit?.projectName || 'غير محدد';
-  const status = unit?.status || 'غير محدد';
-  const type = unit?.type || 'غير محدد';
-  const area = unit?.area ?? '-';
-  const price = unit?.price ?? '-';
-  const location = unit?.location || 'غير محدد';
-  const locationUrl =
-    unit?.locationLink ||
-    (unit?.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(unit.location)}` : null);
-  const details = unit?.details ? String(unit.details).trim() : '';
-  const count = unit?.count ?? null;
-  const id = unit?.id ? String(unit.id) : '';
-
-  const lines = [
-    `أهلاً، أرغب في ${intent || 'الاستفسار'} عن هذه الوحدة:`,
-    '',
-    `الوحدة: ${title}`,
-    `المشروع: ${projectName}`,
-    `الحالة: ${status}`,
-    `النوع: ${type}`,
-    `المساحة: ${area} م²`,
-    `السعر: ${price} ر.س`,
-    `المدينة/الموقع: ${location}`,
-    locationUrl ? `رابط الموقع: ${locationUrl}` : null,
-    count !== null ? `المتبقي: ${count}` : null,
-    details ? `تفاصيل إضافية: ${details}` : null,
-    id ? `معرف الوحدة: ${id}` : null,
-  ].filter(Boolean);
-
-  const message = lines.join('\n');
-  return `https://wa.me/966570109444?text=${encodeURIComponent(message)}`;
+function UnitCard({ unit, index, favorite, compared, comparisonFull, onFavorite, onCompare, onDetails }) {
+  return <article className={`uc-card ${compared ? 'is-compared' : ''}`}>
+    <div className="uc-card__image"><button className="uc-card__open" onClick={onDetails} aria-label={`عرض تفاصيل ${unit.title}`}><UnitImage unit={unit} /><span className="uc-card__explore">تأمّل التفاصيل <ArrowUpLeft size={16} aria-hidden="true" /></span></button><span className={`uc-status uc-status--${unit.status === 'available' ? 'available' : 'neutral'}`}><i aria-hidden="true" />{statusLabels[unit.status] || 'التوفر عند التواصل'}</span><button className="uc-heart" aria-label={`${favorite ? 'إزالة' : 'حفظ'} ${unit.title} ${favorite ? 'من' : 'في'} المفضلة`} aria-pressed={favorite} onClick={onFavorite}><Heart size={19} fill={favorite ? 'currentColor' : 'none'} /></button><span className="uc-card__index" aria-hidden="true">{String(index + 1).padStart(2, '0')} / {unit.type}</span></div>
+    <div className="uc-card__content"><span className="uc-card__project">{unit.projectName}</span><h3><button onClick={onDetails}>{unit.title}</button></h3><div className="uc-card__facts"><span><Maximize2 size={14} aria-hidden="true" />{areaLabel(unit)}</span><span>{unit.type}</span></div><div className="uc-card__price"><strong>{unit.price ? formatNumber(unit.price) : 'لنتحدث عن التفاصيل'}</strong><span>{unit.price ? 'ريال سعودي' : 'السعر عند التواصل'}</span></div><div className="uc-card__bottom"><label title={comparisonFull && !compared ? 'أزل نموذجًا من المقارنة لإضافة هذا النموذج' : ''}><input type="checkbox" checked={compared} disabled={comparisonFull && !compared} onChange={onCompare} /><span>{compared ? 'ضمن المقارنة' : 'أضف للمقارنة'}</span></label><button onClick={onDetails}>التفاصيل <ArrowUpLeft size={18} aria-hidden="true" /></button></div></div>
+  </article>;
 }
 
-function UnitCard({ unit, index, onPreview, onImageClick }) {
-  const { rating, reviews } = getUnitSocialProof(unit);
-  const stars = Math.round(rating);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-[#8B6A14]/35 hover:shadow-xl transition-all duration-500 flex flex-col h-full relative [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_22px,100%_100%,0_100%)]"
-    >
-      {/* Image Container */}
-      <div className="relative bg-white cursor-pointer" onClick={onImageClick}>
-        <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 items-end">
-          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-xl text-[10px] md:text-xs font-extrabold text-gray-900 shadow-sm border border-gray-100 flex items-center gap-1 tracking-tight">
-            <Home size={12} className="text-[#8B6A14] w-3 h-3 md:w-auto md:h-auto" strokeWidth={2.25} />
-            {unit.type}
-          </span>
-          {unit.count !== null && (
-            <span className="px-2.5 py-1 bg-gray-900/85 backdrop-blur-md rounded-xl text-[10px] md:text-xs font-extrabold text-white shadow-sm ring-1 ring-white/10">
-              متبقي {unit.count}
-            </span>
-          )}
-        </div>
-
-        <div className="absolute top-2 left-2 z-20">
-          <span className={`px-2.5 py-1 rounded-xl text-[10px] md:text-xs font-extrabold shadow-sm border tracking-wide ${
-            unit.status === 'متاح'
-              ? 'bg-emerald-500/90 text-white border-emerald-500/20'
-              : unit.status === 'محجوزة'
-                ? 'bg-amber-500/90 text-white border-amber-500/20'
-                : 'bg-gray-200 text-gray-700 border-gray-100'
-          }`}>
-            {unit.status}
-          </span>
-        </div>
-
-        <div className="aspect-[1/1] sm:aspect-[4/3] bg-white flex items-center justify-center">
-          <img
-            src={unit.image}
-            alt={unit.title}
-            className="w-full h-full object-contain p-4 md:p-6 transition-transform duration-500 group-hover:scale-[1.03]"
-            loading="lazy"
-          />
-        </div>
-
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="absolute bottom-3 left-3 w-10 h-10 rounded-xl bg-black/35 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
-            <Maximize2 className="text-white" size={18} strokeWidth={2.25} />
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-4 md:p-5 flex flex-col flex-grow relative">
-        {unit.projectName && (
-          <div className="text-[10px] md:text-xs text-gray-500 mb-2 line-clamp-1">
-            {unit.projectName}
-          </div>
-        )}
-
-        <h3 className="text-[15px] md:text-[15px] font-extrabold text-gray-900 group-hover:text-[#8B6A14] transition-colors duration-300 line-clamp-2 leading-snug min-h-[44px] sm:min-h-[40px] tracking-tight">
-          {unit.title}
-        </h3>
-
-        <div className="flex items-center justify-between gap-2 mt-2 mb-3">
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 dir-ltr">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`${i < stars ? 'text-[#C9A84B] fill-[#C9A84B]' : 'text-gray-200'} w-3.5 h-3.5`}
-                  strokeWidth={2}
-                />
-              ))}
-            </div>
-            <span className="text-[11px] text-gray-600 dir-ltr font-extrabold tracking-tight">{rating}</span>
-            <span className="text-[11px] text-gray-400 dir-ltr">({reviews})</span>
-          </div>
-
-          <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <Maximize2 className="w-3.5 h-3.5 text-[#8B6A14]" strokeWidth={2.25} />
-            <span className="dir-ltr font-extrabold text-gray-700 tracking-tight">{unit.area}</span>
-            <span>م²</span>
-          </div>
-        </div>
-
-        <div className="flex items-end justify-between gap-2 mb-3">
-          <div className="flex items-baseline gap-1">
-            <span className="text-lg md:text-xl font-extrabold text-gray-900 tracking-tight">{unit.price}</span>
-            <span className="text-[11px] text-gray-500 font-medium">ر.س</span>
-          </div>
-          <span className="text-[10px] md:text-[11px] px-2 py-1 rounded-2xl bg-[#8B6A14]/10 text-[#8B6A14] font-extrabold tracking-wide ring-1 ring-[#8B6A14]/10">
-            معاينة فورية
-          </span>
-        </div>
-
-        <p className="text-[12px] md:text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4 min-h-[36px]">
-          {unit.details || 'تشطيبات راقية وتوزيع عملي للمساحات لراحة يومية أكثر.'}
-        </p>
-
-        <div className="mt-auto flex items-center gap-2">
-          <button
-            onClick={onPreview}
-            className="flex-1 py-2.5 bg-gradient-to-br from-[#B8953E] via-[#8B6A14] to-[#6B5210] text-[#FAF3E0] font-extrabold tracking-wide rounded-xl hover:from-[#9C7C20] hover:to-[#7A6212] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#8B6A14]/20 ring-1 ring-[#8B6A14]/15"
-          >
-            <Eye size={16} className="w-4 h-4" strokeWidth={2.25} />
-            <span className="text-[12px] md:text-sm">عرض التفاصيل</span>
-          </button>
-
-          <a
-            href={buildUnitWhatsAppUrl(unit, 'الاستفسار')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-11 h-11 flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:border-[#8B6A14]/30 hover:text-[#8B6A14] hover:bg-[#8B6A14]/[0.04] transition-all duration-300"
-            title="تواصل عبر واتساب"
-          >
-            <ArrowUpRight size={16} className="w-4 h-4" strokeWidth={2.25} />
-          </a>
-        </div>
-      </div>
-    </motion.div>
-  );
+export function CatalogDialog({ title, onClose, className, children }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previouslyFocused = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => { dialog.close(); document.body.style.overflow = previousOverflow; if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true }); };
+  }, []);
+  return <dialog ref={dialogRef} className={`uc-dialog ${className}`} aria-label={title} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) { const rect = event.currentTarget.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose(); } }}><button className="uc-dialog__close" aria-label="إغلاق النافذة" onClick={onClose} autoFocus><X size={21} /></button>{children}</dialog>;
 }
 
-function DropdownSelect({ label, value, options, isOpen, onToggle, onClose, onSelect, icon, className = '' }) {
-  return (
-    <div className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onToggle && onToggle(); }}
-        onBlur={() => {
-          // Close on next tick to allow option click
-          setTimeout(() => onClose && onClose(), 160);
-        }}
-        className={`w-full h-full px-3 md:px-4 py-3 md:py-3.5 flex items-center justify-between gap-2 md:gap-3 rounded-2xl border transition-all duration-200 text-right ${
-          isOpen || value !== 'الكل'
-            ? 'bg-white border-[#8B6A14]/35 text-[#4A380A] ring-4 ring-[#8B6A14]/8 shadow-sm'
-            : 'bg-gray-50 hover:bg-white border-gray-200 text-gray-700 hover:border-[#8B6A14]/20'
-        }`}
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className={`shrink-0 w-8 h-8 md:w-8.5 md:h-8.5 rounded-xl flex items-center justify-center transition-colors ${
-            value !== 'الكل' ? 'bg-[#8B6A14]/10 text-[#8B6A14]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            {icon || <Filter size={16} strokeWidth={2.25} />}
-          </div>
-          <div className="flex flex-col items-start min-w-0">
-            <span className="text-[10px] md:text-[11px] text-gray-400 font-bold tracking-wide">{label}</span>
-            <span className="text-[13px] md:text-sm font-extrabold tracking-tight truncate">{value}</span>
-          </div>
-        </div>
-        <ChevronDown
-          size={17}
-          strokeWidth={2.5}
-          className={`shrink-0 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-[#8B6A14]' : 'text-gray-400'
-          }`}
-        />
-      </button>
+function ShareSelection({ ids, comparison = false }) {
+  const [url, setUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  const inputRef = useRef(null);
+  const reveal = () => { setUrl(unitShareUrl(window.location.origin, ids, comparison)); setCopied(false); setCopyError(false); };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); setCopied(true); setCopyError(false); }
+    catch { setCopyError(true); inputRef.current?.focus(); inputRef.current?.select(); }
+  };
+  return <div className="uc-share"><button type="button" className="uc-share__toggle" onClick={reveal}><Share2 size={15} aria-hidden="true" />{comparison ? 'مشاركة المقارنة' : 'مشاركة النموذج'}</button>{url && <div className="uc-share__link"><label><span className="sr-only">رابط {comparison ? 'المقارنة' : 'النموذج'}</span><input ref={inputRef} type="text" readOnly value={url} dir="ltr" onFocus={event => event.target.select()} /></label><button type="button" onClick={copy}>{copied ? 'نُسخ الرابط' : 'نسخ'}</button><small role="status">{copyError ? 'حدّد الرابط وانسخه يدويًا من الحقل.' : copied ? 'جاهز للمشاركة مع من تحب.' : 'يفتح الرابط نفس الاختيار، دون الحاجة لحساب.'}</small></div>}</div>;
+}
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute z-[80] top-[calc(100%+10px)] right-0 w-full sm:min-w-[240px] max-h-[340px] overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-[0_20px_50px_-18px_rgba(74,56,10,0.28)] ring-1 ring-black/[0.03]"
-          >
-            <div className="overflow-y-auto custom-scrollbar py-2">
-              {options.map((option, optIndex) => {
-                const selected = option === value;
-                return (
-                  <button
-                    key={`${option}-${optIndex}`}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect && onSelect(option);
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-[13px] md:text-sm transition-colors text-right ${
-                      selected
-                        ? 'bg-[#8B6A14]/8 text-[#4A380A] font-extrabold'
-                        : 'text-gray-700 hover:bg-gray-50 font-semibold'
-                    }`}
-                  >
-                    <span className="truncate">{option}</span>
-                    {selected && (
-                      <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#B8953E] to-[#6B5210] text-white flex items-center justify-center shadow-sm ring-1 ring-white/40">
-                        <CheckCircle2 size={13} strokeWidth={3} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+function ViewingRequest({ unit }) {
+  const [date, setDate] = useState('');
+  const [period, setPeriod] = useState('صباحًا (9 – 12)');
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  const today = saudiToday();
+  const prepare = event => {
+    event.preventDefault();
+    const requestedDate = String(new FormData(event.currentTarget).get('preferredDate') || '');
+    if (!requestedDate || requestedDate < saudiToday()) { setError('اختر اليوم أو تاريخًا قادمًا.'); setReady(false); return; }
+    setDate(requestedDate);
+    setError(''); setReady(true);
+  };
+  return <details className="uc-viewing"><summary><Calendar size={17} aria-hidden="true" />طلب معاينة <ChevronDown size={16} aria-hidden="true" /></summary><form onSubmit={prepare}><p>اختر ما يناسبك، ويؤكد فريقنا الموعد معك.</p><div><label htmlFor="uc-view-date">اليوم المفضّل<input id="uc-view-date" name="preferredDate" type="date" required min={today} value={date} onChange={event => { setDate(event.target.value); setReady(false); setError(''); }} /></label><label htmlFor="uc-view-period">الفترة المفضّلة<select id="uc-view-period" value={period} onChange={event => { setPeriod(event.target.value); setReady(false); }}><option>صباحًا (9 – 12)</option><option>ظهرًا (12 – 5)</option><option>مساءً (5 – 10)</option></select></label></div>{error && <p className="uc-viewing__error" role="alert">{error}</p>}{ready ? <div className="uc-viewing__ready"><span role="status">طلبك جاهز: {date} · {period}</span><a href={viewingRequestUrl(unit, date, period)} className="uc-button" target="_blank" rel="noopener noreferrer">افتح طلب المعاينة في واتساب <ArrowUpLeft size={16} aria-hidden="true" /></a><small>هذا طلب لموعد مفضّل، وليس حجزًا مؤكدًا. تُرسل الرسالة بنفسك من واتساب.</small></div> : <button type="submit" className="uc-button">جهّز طلب المعاينة <ArrowLeft size={16} aria-hidden="true" /></button>}</form></details>;
+}
+
+export function UnitDetails({ unit, favorite, onFavorite }) {
+  const [zoomed, setZoomed] = useState(false);
+  const mapUrl = projectMapUrl(unit.locationLink, unit.location);
+  return <div className={`uc-detail ${zoomed ? 'is-zoomed' : ''}`}>
+    <div className="uc-detail__visual"><span className="uc-detail__image-label">المساحة، من منظور أقرب.</span><div className="uc-detail__image-scroll"><UnitImage unit={unit} /></div>{unit.image && <button className="uc-detail__zoom" onClick={() => setZoomed(!zoomed)} aria-pressed={zoomed}><Maximize2 size={16} aria-hidden="true" />{zoomed ? 'العودة للحجم الكامل' : 'تكبير المخطط'}</button>}</div>
+    <div className="uc-detail__body">
+      <span className="sf-kicker">{unit.projectName} / {unit.type}</span><h2>{unit.title}</h2><span className={`uc-status uc-status--${unit.status === 'available' ? 'available' : 'neutral'}`}><i aria-hidden="true" />{statusLabels[unit.status] || 'التوفر عند التواصل'}</span>
+      <dl className="uc-detail__facts"><div><dt>المساحة</dt><dd>{areaLabel(unit)}</dd></div><div><dt>السعر المسجّل</dt><dd>{priceLabel(unit)}</dd></div>{unit.count !== null && <div><dt>العدد المسجّل للنموذج</dt><dd>{formatNumber(unit.count)}</dd></div>}<div><dt>نوع السكن</dt><dd>{unit.type}</dd></div></dl>
+      <h3>عن هذه المساحة</h3><p className="uc-detail__description">{unit.details || 'تواصل مع فريقنا لمعرفة مواصفات هذا النموذج وتفاصيله.'}</p>
+      {unit.location && <p className="uc-detail__location"><MapPin size={16} aria-hidden="true" />{unit.location}</p>}
+      <div className="uc-detail__links">{mapUrl && <a href={mapUrl} target="_blank" rel="noopener noreferrer">موقع المشروع <ArrowUpLeft size={15} /></a>}{unit.projectId && <Link href={`/projects/${unit.projectId}`}>صفحة المشروع <ArrowUpLeft size={15} /></Link>}</div>
+      <ShareSelection ids={[unit.id]} />
+      {unit.location && <details className="uc-nearby"><summary>استكشف الحي في الخرائط <ChevronDown size={14} aria-hidden="true" /></summary><p>ابحث عن الخدمات حول {unit.location} عبر خرائط Google.</p><div>{['مدارس', 'حدائق', 'خدمات صحية'].map(category => <a key={category} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${category} بالقرب من ${unit.location}`)}`} target="_blank" rel="noopener noreferrer">{category}<ArrowUpLeft size={12} aria-hidden="true" /></a>)}</div></details>}
+      {unit.status === 'available' && <ViewingRequest unit={unit} />}
+      <div className="uc-detail__actions"><a className="uc-button" href={unitContactUrl(unit)} target="_blank" rel="noopener noreferrer">استفسر عن النموذج <ArrowUpLeft size={18} aria-hidden="true" /></a><button className="uc-detail__save" aria-pressed={favorite} onClick={onFavorite}><Heart size={17} fill={favorite ? 'currentColor' : 'none'} aria-hidden="true" />{favorite ? 'محفوظ في المفضلة' : 'احفظ لاختيار لاحق'}</button></div><p className="uc-detail__note">تُؤكد الأسعار والتوفر وتفاصيل المعاينة مع فريقنا.</p>
     </div>
-  );
+  </div>;
 }

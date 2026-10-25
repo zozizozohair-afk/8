@@ -1,0 +1,25 @@
+.ir-floating { position: fixed; left: 24px; bottom: 24px; z-index: 49; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 112px); pointer-events: none; }
+.ir-floating a { pointer-events: auto; }
+.ir-floating__register { display: flex; align-items: center; gap: 15px; padding: 12px 16px; background: #d8c18b; color: #1c3327; border: 1px solid #ecdcb6; border-radius: 4px; box-shadow: 0 8px 32px #0e241e26, inset 0 1px #ffffff66; transition: background .2s, transform .2s; }
+.ir-floating__register > span:nth-child(2) { font-size: 16px; font-weight: 500; white-space: nowrap; }
+.ir-floating__register small { display: block; font-size: 9px; font-weight: 400; color: #5c6148; margin-top: 4px; }
+.ir-floating__icon { width: 35px; height: 35px; border: 1px solid #20382e35; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
+.ir-floating__register > svg { margin-right: 10px; flex-shrink: 0; }
+.ir-floating__register:hover { background: #e7d3a7; transform: translateY(-2px); }
+.ir-floating__top { display: grid; place-items: center; width: 42px; height: 42px; color: #20382e; background: #f6f3ebf2; border: 1px solid #a6ab96; border-radius: 50%; box-shadow: 0 4px 15px #0e241e12; flex-shrink: 0; }
+.ir-floating__top:hover { background: #e7e9dc; }
+.ir-floating a:focus-visible { outline: 2px solid #a38648; outline-offset: 5px; }
+body:has(.uc-compare-dock) .ir-floating { bottom: 122px; }
+@media (max-width: 1023px) { body:has(.uc-compare-dock) .ir-floating { bottom: 194px; } }
+@media (max-width: 639px) {
+  .ir-floating { left: 16px; bottom: 22px; gap: 8px; max-width: calc(100% - 104px); }
+  .ir-floating__register { gap: 10px; padding: 11px 13px; }
+  .ir-floating__register > span:nth-child(2) { font-size: 14px; }
+  .ir-floating__register small { font-size: 8px; }
+  .ir-floating__icon { width: 28px; height: 28px; }
+  .ir-floating__icon > svg { width: 15px; }
+  .ir-floating__register > svg { width: 17px; margin-right: 2px; }
+  .ir-floating__top { width: 34px; height: 34px; }
+}
+@media (max-width: 380px) { .ir-floating__icon { display: none; } .ir-floating__register { gap: 8px; } }
+@media (prefers-reduced-motion: reduce) { .ir-floating__register { transition: none; } }

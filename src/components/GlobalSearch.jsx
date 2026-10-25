@@ -1,211 +1,53 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { Search, X, Loader2, Building2, Home, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Search, ArrowUpLeft, Building2, Home, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { formatNumber, kindLabels } from '@/lib/unitCatalog.mjs';
+import { unitKind } from '@/lib/projectDiscovery.mjs';
+import NavigationDialog from './NavigationDialog';
 
 export default function GlobalSearch({ isOpen, onClose }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  return isOpen ? <SearchPanel onClose={onClose} /> : null;
+}
+
+function SearchPanel({ onClose }) {
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState({ projects: [], units: [] });
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef(null);
-  const router = useRouter();
-
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  // PostgREST filter punctuation is removed before composing the OR expression.
+  const term = query.replace(/[,().%_*\\"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current.focus(), 100);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchTerm.trim().length < 1) {
-        setResults({ projects: [], units: [] });
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select('id, name, location, main_image, description')
-          .or(`name.ilike.%${searchTerm}%,location.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-          .limit(5);
-        if (projectsError) throw projectsError;
-
-        const { data: unitsData, error: unitsError } = await supabase
-          .from('units')
-          .select('id, type, project_id, size, model_details')
-          .or(`type.ilike.%${searchTerm}%,model_details.ilike.%${searchTerm}%`)
-          .limit(5);
-        if (unitsError) throw unitsError;
-        
-        let unitsWithProjects = [];
-        if (unitsData && unitsData.length > 0) {
-            const projectIds = [...new Set(unitsData.map(u => u.project_id))];
-            const { data: projectsForUnits } = await supabase
-                .from('projects')
-                .select('id, name')
-                .in('id', projectIds);
-            
-            unitsWithProjects = unitsData.map(unit => ({
-                ...unit,
-                project_name: projectsForUnits?.find(p => p.id === unit.project_id)?.name || ''
-            }));
-        }
-
-        setResults({
-          projects: projectsData || [],
-          units: unitsWithProjects || []
-        });
-
-      } catch (error) {
-        console.error('Search error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
-
-  const handleClose = () => {
-    setSearchTerm('');
+    if (!term) { setLoading(false); setError(false); setResults({ projects: [], units: [] }); return; }
+    let active = true;
+    const controller = new AbortController();
+    setLoading(true);
+    setError(false);
     setResults({ projects: [], units: [] });
-    onClose();
-  };
+    const timer = setTimeout(async () => {
+      try {
+        const [projects, units] = await Promise.all([
+          supabase.from('projects').select('id, name, location, main_image').or(`name.ilike.%${term}%,location.ilike.%${term}%`).limit(6).abortSignal(controller.signal),
+          supabase.from('units').select('id, unit_number, type, project_id, size, projects(name)').or(`unit_number.ilike.%${term}%,type.ilike.%${term}%,model_details.ilike.%${term}%`).limit(6).abortSignal(controller.signal),
+        ]);
+        if (projects.error || units.error) throw new Error('Search unavailable');
+        if (active) setResults({ projects: projects.data || [], units: units.data || [] });
+      } catch { if (active) setError(true); }
+      finally { if (active) setLoading(false); }
+    }, 300);
+    return () => { active = false; clearTimeout(timer); controller.abort(); };
+  }, [term, retry]);
 
-  const handleNavigate = (path) => {
-    router.push(path);
-    handleClose();
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-20 px-4 dir-rtl [font-family:var(--font-cairo)]">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={handleClose}
-          />
-          
-          <motion.div 
-            initial={{ y: -20, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: -20, opacity: 0, scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh] ring-1 ring-black/5"
-          >
-            <div className="p-4 border-b border-gray-100">
-                <div className="relative flex items-center gap-3">
-                    <Search className="text-gray-400 w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.25} />
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="ابحث عن مشروع، وحدة، حي..."
-                        className="w-full bg-gray-50 border-none rounded-2xl py-3 pr-12 pl-12 text-base text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#B8953E]/20 transition-all font-medium"
-                    />
-                    <button 
-                        onClick={handleClose}
-                        className="p-2 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <X size={20} strokeWidth={2.25} />
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
-                <div className="p-4">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-8 text-gray-400">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#8B6A14]" strokeWidth={2.25} />
-                            <span className="mr-3 text-sm font-semibold">جاري البحث...</span>
-                        </div>
-                    ) : (
-                        searchTerm.length > 0 ? (
-                            <div className="space-y-6">
-                                {results.projects.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-xs font-extrabold text-gray-500 px-2 flex items-center gap-2 tracking-wide">
-                                            <Building2 size={14} strokeWidth={2.25} />
-                                            المشاريع
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {results.projects.map(project => (
-                                                <div 
-                                                    key={project.id}
-                                                    onClick={() => handleNavigate(`/projects/${project.id}`)}
-                                                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-[#B8953E]/5 cursor-pointer transition-colors group"
-                                                >
-                                                    <div className="w-12 h-12 rounded-2xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-100">
-                                                        <img 
-                                                            src={project.main_image || '/images/placeholder.jpg'} 
-                                                            alt={project.name} 
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-extrabold text-sm text-gray-900 group-hover:text-[#8B6A14] truncate tracking-tight">{project.name}</h4>
-                                                        <p className="text-xs text-gray-500 truncate font-medium">{project.location}</p>
-                                                    </div>
-                                                    <ArrowRight size={16} className="text-gray-300 group-hover:text-[#8B6A14] -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all rtl:rotate-180" strokeWidth={2.25} />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {results.units.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-xs font-extrabold text-gray-500 px-2 flex items-center gap-2 tracking-wide">
-                                            <Home size={14} strokeWidth={2.25} />
-                                            الوحدات
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {results.units.map(unit => (
-                                                <div 
-                                                    key={unit.id}
-                                                    onClick={() => handleNavigate(`/projects/${unit.project_id}`)}
-                                            className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:border-[#B8953E]/30 hover:shadow-sm cursor-pointer transition-all bg-white group"
-                                        >
-                                            <div>
-                                                <h4 className="font-extrabold text-sm text-gray-900 group-hover:text-[#8B6A14] transition-colors tracking-tight">{unit.type}</h4>
-                                                        <p className="text-xs text-gray-500 mt-0.5 font-medium">مشروع: {unit.project_name}</p>
-                                                    </div>
-                                                    {unit.size && (
-                                                        <span className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-2xl border border-gray-100 font-semibold">
-                                                            {unit.size} م²
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {results.projects.length === 0 && results.units.length === 0 && (
-                                    <div className="text-center py-8 text-gray-400">
-                                        <p className="text-sm font-medium">لا توجد نتائج مطابقة لـ «{searchTerm}»</p>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 text-gray-400 text-sm opacity-60 font-light">
-                                ابدأ الكتابة للبحث...
-                            </div>
-                        )
-                    )}
-                </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
+  return <NavigationDialog title="البحث في صفوة عنان" className="sn-search-dialog" onClose={onClose} inputFocus>
+    <div className="sn-search__intro"><span lang="en" dir="ltr">YOUR NEXT ADDRESS</span><h2>عمّ تبحث اليوم؟</h2><p>ابحث باسم المشروع، الحي، أو نموذج الوحدة.</p></div>
+    <label className="sn-search__input"><Search size={23} strokeWidth={1.4} aria-hidden="true" /><span className="sr-only">البحث في صفوة عنان</span><input autoFocus type="search" maxLength={100} value={query} onChange={event => setQuery(event.target.value)} placeholder="ابدأ باسم أو كلمة…" /></label>
+    <div className="sn-search__results" aria-live="polite" aria-busy={loading}>
+      {!term ? <div className="sn-search__suggestions"><span>أو ابدأ من هنا</span><Link href="/#projects" onClick={onClose}><Building2 size={19} strokeWidth={1.4} aria-hidden="true" />استكشف المشاريع<ArrowUpLeft size={17} aria-hidden="true" /></Link><Link href="/#unit-models" onClick={onClose}><Home size={19} strokeWidth={1.4} aria-hidden="true" />تصفّح نماذج الوحدات<ArrowUpLeft size={17} aria-hidden="true" /></Link></div> : loading ? <p className="sn-search__status" role="status">نبحث لك عن التفاصيل…</p> : error ? <div className="sn-search__status"><p>تعذّر البحث حاليًا.</p><button onClick={() => setRetry(value => value + 1)}>حاول مرة أخرى</button></div> : results.projects.length + results.units.length === 0 ? <p className="sn-search__status">لم نجد نتائج لـ «{query}». جرّب اسم مشروع أو حي آخر.</p> : <>
+      {results.projects.length > 0 && <div className="sn-search__group"><h3>المشاريع <span>{formatNumber(results.projects.length)}</span></h3>{results.projects.map(project => <Link key={project.id} href={`/projects/${project.id}`} onClick={onClose}><Building2 size={21} strokeWidth={1.2} aria-hidden="true" /><span><strong>{project.name || 'مشروع سكني'}</strong><small><MapPin size={11} aria-hidden="true" />{project.location || 'تفاصيل الموقع داخل المشروع'}</small></span><ArrowUpLeft size={17} aria-hidden="true" /></Link>)}</div>}
+      {results.units.length > 0 && <div className="sn-search__group"><h3>نماذج الوحدات <span>{formatNumber(results.units.length)}</span></h3>{results.units.map(unit => <Link key={unit.id} href={unit.project_id ? `/projects/${unit.project_id}` : '/#unit-models'} onClick={onClose}><Home size={21} strokeWidth={1.2} aria-hidden="true" /><span><strong>{unit.unit_number || kindLabels[unitKind(unit.type)]}</strong><small>{(Array.isArray(unit.projects) ? unit.projects[0]?.name : unit.projects?.name) || 'نموذج سكني'}{Number(unit.size) > 0 ? ` · ${formatNumber(unit.size)} م²` : ''}</small></span><ArrowUpLeft size={17} aria-hidden="true" /></Link>)}</div>}
+    </>}
+    </div><div className="sn-search__foot"><span>تفاصيل أقرب. اختيار أوضح.</span><span><kbd>Esc</kbd> للإغلاق</span></div>
+  </NavigationDialog>;
 }
